@@ -1,0 +1,96 @@
+* {
+    background: url('back.webm') no-repeat center center fixed;
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+    background-size: cover;
+}
+body { padding: 0px; margin: 0px; }
+
+.logo {
+    width: 400px;
+    height: 100px;
+    background-color: #d577fac9;
+    position: absolute;
+    top: 10%;
+    left: 0;
+    right: 0;
+    margin: 20px auto;
+    padding: 1%;
+    border-radius: 25px 25px;
+}
+.logo p{
+    position: absolute;
+    top: -10px;
+    font-size: 5em;
+    margin: 0;
+    color: white;
+}
+#submit_bt {
+    background-color: #d577fac9;
+    border-color: #d577fac9;
+    outline: 0; /* 라인 없애기 */
+    margin: 0;
+}
+
+#findid, a:hover, a:link, a:visited {
+    text-decoration: none; /* 밑줄 없애기 */
+    color: black;
+}
+
+#videobcg {
+    position : fixed;
+    top: 0px;
+    left: 0px;
+    min-width: 100%;
+    min-height: 100%;
+    width: auto;
+    height: auto;
+    z-index: -1000;
+    overflow: hidden;
+}
+/* Small devices (landscape phones, 576px and up) */
+@media (max-width: 576px) {
+    .login {
+        width: 100%;
+        margin: 200px auto;
+        background-color: #e7aaffb2;
+        padding: 1%;
+    }
+}
+   
+/* Medium devices (tablets, 768px and up) */
+@media (max-width: 768px) {
+    .login {
+        width: 100%;
+        margin: 200px auto;
+        background-color: #e7aaffb2;
+        padding: 1%;
+    }
+}
+   
+/* Large devices (desktops, 992px and up) */
+@media (max-width: 992px) {
+    .login {
+        width: 100%;
+        margin: 200px auto;
+        background-color: #e7aaffb2;
+        padding: 1%;
+    }
+}
+
+/* Large devices (desktops, 992px and up) */
+@media (min-width: 992px) {
+    .login {
+        width: 300px;
+        height: 400px;
+        position: absolute;
+        top: 25%;
+        left: 0;
+        right: 0;
+        margin: 50px auto;
+        background-color: #e7aaffb2;
+        padding: 1%;
+        border-radius: 25px 25px;
+    }
+}

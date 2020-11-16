@@ -1,0 +1,97 @@
+/* Footer */
+@import url('https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css');
+footer {
+    padding: 10px 0;
+
+}
+h2 {
+	margin: 0 auto;
+	text-align: center;
+}
+main {
+	width: 100%;
+	height: 800px;
+}
+.contents {
+	width: 80%;
+	margin: 0 auto;
+}
+.navbar-font{
+	color: rgba(255,255,255,.75);
+}
+.map {
+	width: 100%;
+	height: 100%;
+}
+.bg-purple {
+	background-color: #8b57a0;
+}
+footer .section-title {
+    text-align: center;
+    color: #007b5e;
+
+    text-transform: uppercase;
+}
+#footer {
+    background: #8b57a0 !important;
+}
+
+#footer a {
+    color: #ffffff;
+    text-decoration: none !important;
+    background-color: transparent;
+    -webkit-text-decoration-skip: objects;
+}
+#footer ul.social li{
+	padding: 3px 0;
+}
+#footer ul.social li a i {
+    margin-right: 5px;
+	font-size:25px;
+	-webkit-transition: .5s all ease;
+	-moz-transition: .5s all ease;
+	transition: .5s all ease;
+}
+#footer ul.social li:hover a i {
+	font-size:30px;
+	margin-top:-10px;
+}
+#footer ul.social li a,
+#footer ul.quick-links li a{
+	color:#ffffff;
+}
+#footer ul.social li a:hover{
+	color:#eeeeee;
+}
+#footer ul.quick-links li{
+	padding: 3px 0;
+	-webkit-transition: .5s all ease;
+	-moz-transition: .5s all ease;
+	transition: .5s all ease;
+}
+#footer ul.quick-links li:hover{
+
+	margin-left:5px;
+	font-weight:700;
+}
+#footer ul.quick-links li a i{
+	margin-right: 5px;
+}
+#footer ul.quick-links li:hover a i {
+    font-weight: 700;
+}
+img {
+	width: 35px;
+	height: 35px;
+}
+@media (max-width:767px){
+	#footer h5 {
+    padding-left: 0;
+    border-left: transparent;
+    padding-bottom: 0px;
+    margin-bottom: 10px;
+}
+}
+
+
+

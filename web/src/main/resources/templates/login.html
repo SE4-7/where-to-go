@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 
 <head th:replace="fragments/common :: head('login', ~{::link})">
-    <link th:href="@{/login.css}" rel="stylesheet">
+    <link th:href="@{/css/login.css}" rel="stylesheet">
 </head>
 <body>
 
@@ -22,34 +22,33 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.min.js" integrity="sha384-w1Q4orYjBQndcko6MimVbzY0tgp4pWB4lZ7lr30WKz0vr/aWKhXdBNmNb5D92v7s" crossorigin="anonymous"></script>
 -->
 <video muted autoplay loop id="videobcg">
-    <source src="video1.mp4" type="video/mp4">
+    <source src="#" th:src="@{/img/video1.mp4}" type="video/mp4">
     <strong>Your browser does not support the video tag.</strong>
 </video>
 <div class="logo">
     <p>어디갈까?</p>
 </div>
 <div class="login">
+    <form th:action="@{/login}" method="post">
+        <div class="form-group">
+            <label for="username">아이디</label>
+            <!-- 스프링 시큐리티에서는 아이디 이름은 username 비밀번호는 password로 지정해야 사용이 가능하다. -->
+            <input type="text" name="username" class="form-control" id="username">
+        </div>
+        <div class="form-group">
+            <label for="exampleInputPassword1">비밀번호</label>
+            <input type="password" name="password" class="form-control" id="exampleInputPassword1">
+        </div>
+        <!--        <div class="form-group form-check" style="display: inline;">-->
+        <!--            <input type="checkbox" class="form-check-input" id="exampleCheck1">-->
+        <!--            <label class="form-check-label" for="exampleCheck1">Check me out</label>-->
 
-    <form>
-        <div class="form-group">
-            <label for="exampleInputEmail1">Email address</label>
-            <input type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp">
-            <small id="emailHelp" class="form-text text-muted">We'll never share your email with anyone else.</small>
-        </div>
-        <div class="form-group">
-            <label for="exampleInputPassword1">Password</label>
-            <input type="password" class="form-control" id="exampleInputPassword1">
-        </div>
-        <div class="form-group form-check" style="display: inline;">
-            <input type="checkbox" class="form-check-input" id="exampleCheck1">
-            <label class="form-check-label" for="exampleCheck1">Check me out</label>
-            <a th:href="main">
-                <button type="submit" class="btn btn-primary" id="submit_bt">Submit</button>
-            </a>
-        </div>
+        <button type="submit" class="btn btn-primary" id="submit_bt">Submit</button>
+
+        <!--        </div>-->
         <div class="form-group" id="findid">
-            <a href="#">아이디/비밀번호 찾기</a><br>
-            <a data-toggle="modal" href="#myModal">회원가입</a>
+            <a href="#" class="text-white">아이디/비밀번호 찾기</a><br>
+            <a data-toggle="modal" class="text-white" href="#myModal">회원가입</a>
         </div>
     </form>
 </div>
@@ -82,58 +81,40 @@
                 <h4 class="card-title mt-3 text-center">Create Account</h4>
             </div>
             <div class="modal-body">
-                <form>
+                <form th:action="@{/register}" method="post">
                     <div class="form-group input-group">
                         <div class="input-group-prepend">
                             <span class="input-group-text"> <i class="fa fa-user"></i> </span>
                         </div>
-                        <input name="" class="form-control" placeholder="Full name" type="text">
+                        <input name="user_id" class="form-control" placeholder="아이디" type="text">
                     </div> <!-- form-group// -->
                     <div class="form-group input-group">
                         <div class="input-group-prepend">
                             <span class="input-group-text"> <i class="fa fa-envelope"></i> </span>
                         </div>
-                        <input name="" class="form-control" placeholder="Email address" type="email">
-                    </div> <!-- form-group// -->
-
-                    <div class="form-group input-group">
-                        <div class="input-group-prepend">
-                            <span class="input-group-text"> <i class="fa fa-phone"></i> </span>
-                        </div>
-                        <select class="custom-select" style="max-width: 120px;">
-                            <option selected="">010</option>
-                            <option value="1">+972</option>
-                            <option value="2">+198</option>
-                            <option value="3">+701</option>
-                        </select>
-                        <input name="" class="form-control" placeholder="Phone number" type="text">
-                    </div> <!-- form-group// -->
-
-                    <div class="form-group input-group">
-                        <div class="input-group-prepend">
-                            <span class="input-group-text"> <i class="fa fa-building"></i> </span>
-                        </div>
-                        <select class="form-control">
-                            <option selected=""> Select job type</option>
-                            <option>Designer</option>
-                            <option>Manager</option>
-                            <option>Accaunting</option>
-                        </select>
-                    </div> <!-- form-group end.// -->
-                    <div class="form-group input-group">
-                        <div class="input-group-prepend">
-                            <span class="input-group-text"> <i class="fa fa-lock"></i> </span>
-                        </div>
-                        <input class="form-control" placeholder="Create password" type="password">
+                        <input name="user_name" class="form-control" placeholder="이름" type="text">
                     </div> <!-- form-group// -->
                     <div class="form-group input-group">
                         <div class="input-group-prepend">
                             <span class="input-group-text"> <i class="fa fa-lock"></i> </span>
                         </div>
-                        <input class="form-control" placeholder="Repeat password" type="password">
-                    </div> <!-- form-group// -->
+                        <input class="form-control" name="user_pw" placeholder="Create password" type="password">
+                    </div>
+                    <div class="form-group input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text"> <i class="fa fa-lock"></i> </span>
+                        </div>
+                        <label>남자 <input class="form-control" name="user_gender" type="radio" value="남자"></label>
+                        <label>여자 <input class="form-control" name="user_gender" type="radio" value="여자"></label>
+                    </div>
+                    <div class="form-group input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text"> <i class="fa fa-lock"></i> </span>
+                        </div>
+                        <label>생년월일 <input class="form-control" name="user_birth" type="date"></label>
+                    </div>
                     <div class="form-group">
-                        <button type="submit" class="btn btn-primary btn-block"> Create Account  </button>
+                        <button type="submit" class="btn btn-secondary btn-block"> Create Account  </button>
                     </div> <!-- form-group// -->
                     <p class="text-center">Have an account? <a href="">Log In</a> </p>
                 </form>

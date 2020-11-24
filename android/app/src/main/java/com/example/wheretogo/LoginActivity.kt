@@ -26,7 +26,7 @@ class LoginActivity : AppCompatActivity() {
         loginButton.setOnClickListener {
             val intent = Intent(this, MapActivity::class.java)
 
-            TODO("로그인 처리")
+            // TODO("로그인 처리")
 
             startActivity(intent)
         }

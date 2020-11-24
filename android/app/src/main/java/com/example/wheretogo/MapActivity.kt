@@ -7,18 +7,31 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Base64
 import android.view.ViewGroup
+import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
 import net.daum.mf.map.api.MapView
 import java.security.MessageDigest
 
-class MainActivity : AppCompatActivity() {
+class MapActivity : AppCompatActivity() {
+    lateinit var drawerLayout: DrawerLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_map)
 
+        drawerLayout = findViewById(R.id.drawer_layout)
+
         val mapView = MapView(this)
         val mapViewContainer: ViewGroup = findViewById(R.id.mapView)
         mapViewContainer.addView(mapView)
+    }
+
+    override fun onBackPressed() {
+        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+            drawerLayout.closeDrawer(GravityCompat.START)
+        } else {
+            super.onBackPressed()
+        }
     }
 }
 

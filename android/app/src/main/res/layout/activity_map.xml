@@ -33,7 +33,7 @@
                 android:background="#00FFFFFF"
                 android:iconifiedByDefault="false"
                 android:searchIcon="@null"
-                android:text="ìž¥ì†Œë¥¼ ìž…ë ¥í•˜ì„¸ìš”"
+                android:text="?ž¥?†Œë¥? ?ž…? ¥?•˜?„¸?š”"
                 android:textSize="18sp"
                 android:textColor="#FFA9A9A9"/>
 
@@ -106,13 +106,19 @@
 
     <include layout="@layout/activity_search"/>
 
+    <FrameLayout
+        android:id="@+id/container_fragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"/>
+
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/nav_view"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:layout_gravity="start"
-        android:paddingTop="30dp"
         android:fitsSystemWindows="true"
+        android:overScrollMode="never"
         app:headerLayout="@layout/nav_header_main"
         app:menu="@menu/activity_main_drawer"/>
 

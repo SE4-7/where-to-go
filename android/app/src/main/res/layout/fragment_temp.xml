@@ -3,18 +3,14 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="20dp">
-
-    <ImageView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:src="@mipmap/ic_launcher"/>
+    android:padding="20dp"
+    android:background="#FFFFFFFF"
+    android:orientation="vertical">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="텍스트입니다."/>
+        android:text="정보 수정"
+        android:textSize="30sp"/>
 
 </LinearLayout>

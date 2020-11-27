@@ -18,7 +18,9 @@ main > .container {
 code {
   font-size: 80%;
 }
-
+.searchBox{
+  margin: 0 auto;
+}
 .logo2 {
   width: 20px;
   height: 20px;

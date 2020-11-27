@@ -25,10 +25,16 @@
     <source src="#" th:src="@{/img/video1.mp4}" type="video/mp4">
     <strong>Your browser does not support the video tag.</strong>
 </video>
-<div class="logo">
-    <p>어디갈까?</p>
-</div>
+
+<img class="logo" th:src="@{/img/logo.png}">
+
 <div class="login">
+    <div th:if="${param.error}" class="alert alert-danger" role="alert">
+        Invalid username and password.
+    </div>
+    <div th:if="${param.logout}" class="alert alert-danger" role="alert">
+        You have been logged out.
+    </div>
     <form th:action="@{/login}" method="post">
         <div class="form-group">
             <label for="username">아이디</label>

@@ -9,13 +9,13 @@ body { padding: 0px; margin: 0px; }
 
 .logo {
     width: 400px;
-    height: 100px;
-    background-color: #d577fac9;
+    height: 250px;
+    z-index: 1;
     position: absolute;
-    top: 10%;
+    top: 0;
     left: 0;
     right: 0;
-    margin: 20px auto;
+    margin: 0 auto;
     padding: 1%;
     border-radius: 25px 25px;
 }
@@ -53,7 +53,7 @@ body { padding: 0px; margin: 0px; }
 @media (max-width: 576px) {
     .login {
         width: 100%;
-        margin: 200px auto;
+        margin: 250px auto;
         background-color: #e7aaffb2;
         padding: 1%;
     }
@@ -63,7 +63,7 @@ body { padding: 0px; margin: 0px; }
 @media (max-width: 768px) {
     .login {
         width: 100%;
-        margin: 200px auto;
+        margin: 250px auto;
         background-color: #e7aaffb2;
         padding: 1%;
     }
@@ -73,7 +73,7 @@ body { padding: 0px; margin: 0px; }
 @media (max-width: 992px) {
     .login {
         width: 100%;
-        margin: 200px auto;
+        margin: 250px auto;
         background-color: #e7aaffb2;
         padding: 1%;
     }
@@ -83,9 +83,9 @@ body { padding: 0px; margin: 0px; }
 @media (min-width: 992px) {
     .login {
         width: 300px;
-        height: 400px;
+        height: 350px;
         position: absolute;
-        top: 25%;
+        top: 30%;
         left: 0;
         right: 0;
         margin: 50px auto;

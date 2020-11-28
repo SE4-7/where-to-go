@@ -20,7 +20,7 @@ public class User {
 
 
     private String user_birth;
-
+    private String user_choice;
     private Boolean enabled;
 
     @ManyToMany()

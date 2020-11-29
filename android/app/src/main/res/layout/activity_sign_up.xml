@@ -1,83 +1,102 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center_horizontal">
+    android:layout_height="match_parent">
 
-    <ImageView
-        android:layout_width="300dp"
-        android:layout_height="300dp"
-        android:src="@drawable/logo02"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent"/>
+    <LinearLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center_horizontal">
 
-    <EditText
-        android:id="@+id/edittext_sign_up_id"
-        android:layout_width="300dp"
-        android:layout_height="wrap_content"
-        android:hint="아이디"
-        android:inputType="text"/>
+        <ImageView
+            android:layout_width="300dp"
+            android:layout_height="300dp"
+            android:src="@drawable/logo02"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent"/>
 
-    <EditText
-        android:id="@+id/edittext_sign_up_pw"
-        android:layout_width="300dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:hint="비밀번호"
-        android:inputType="textPassword"/>
+        <EditText
+            android:id="@+id/edittext_sign_up_id"
+            android:layout_width="300dp"
+            android:layout_height="wrap_content"
+            android:hint="아이디"
+            android:inputType="text"/>
 
-    <EditText
-        android:id="@+id/edittext_sign_up_age"
-        android:layout_width="300dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:hint="나이"
-        android:inputType="textPassword"/>
+        <EditText
+            android:id="@+id/edittext_sign_up_pw"
+            android:layout_width="300dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:hint="비밀번호"
+            android:inputType="textPassword"/>
 
-    <RadioGroup
-        android:id="@+id/radiogroup_sex"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:layout_marginLeft="58dp"
-        android:layout_gravity="left"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
+        <EditText
+            android:id="@+id/edittext_sign_up_name"
+            android:layout_width="300dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:hint="이름"
+            android:inputType="text"/>
 
-        <TextView
+        <EditText
+            android:id="@+id/edittext_sign_up_birth"
+            android:layout_width="300dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:hint="생년월일"
+            android:inputType="text"
+            android:focusable="false"/>
+
+        <RadioGroup
+            android:id="@+id/radiogroup_sex"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginRight="30dp"
-            android:text="성별"
-            android:textSize="18sp"/>
+            android:layout_marginTop="20dp"
+            android:layout_marginLeft="58dp"
+            android:layout_gravity="left"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-        <RadioButton
-            android:id="@+id/radiobutton_man"
-            android:layout_width="wrap_content"
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="30dp"
+                android:text="성별"
+                android:textSize="18sp"/>
+
+            <RadioButton
+                android:id="@+id/radiobutton_man"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="30dp"
+                android:text="남" />
+
+            <RadioButton
+                android:id="@+id/radiobutton_women"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="여"/>
+
+        </RadioGroup>
+
+        <Button
+            android:id="@+id/button_sign_up"
+            android:layout_width="300dp"
             android:layout_height="wrap_content"
-            android:layout_marginRight="30dp"
-            android:text="남" />
+            android:layout_marginTop="30dp"
+            android:background="#FF333333"
+            android:text="회원가입"
+            android:textSize="17sp"
+            android:textColor="#FFFFFFFF"/>
 
-        <RadioButton
-            android:id="@+id/radiobutton_women"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="여"/>
+    </LinearLayout>
 
-    </RadioGroup>
+    <include layout="@layout/activity_taste"/>
 
-    <Button
-        android:id="@+id/button_sign_up"
-        android:layout_width="300dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="30dp"
-        android:background="#FF333333"
-        android:text="회원가입"
-        android:textSize="17sp"
-        android:textColor="#FFFFFFFF"/>
-
-</LinearLayout>
+</FrameLayout>

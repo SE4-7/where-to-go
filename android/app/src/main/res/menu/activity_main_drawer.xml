@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<menu
+    xmlns:android="http://schemas.android.com/apk/res/android">
     <item
-        android:id="@+id/menu1"
-        android:title="첫번째"/>
+        android:id="@+id/modify_info"
+        android:title="수정할까?" />
 
     <item
-        android:title="두번째"/>
+        android:id="@+id/favorite"
+        android:title="여기갈까?"/>
 
     <item
-        android:title="세번째"/>
+        android:id="@+id/recent_record"
+        android:title="뭐봤더라?"/>
 </menu>

@@ -24,8 +24,16 @@ if (navigator.geolocation) {
         lon = position.coords.longitude; // 경도
         console.log(lat+' '+lon);
         var locPosition = new kakao.maps.LatLng(lat, lon), // 마커가 표시될 위치를 geolocation으로 얻어온 좌표로 생성합니다
-            message = '<div style="padding:5px;">여기에 계신가요?!</div>'; // 인포윈도우에 표시될 내용입니다
+            message = '<div style="padding:5px; width: 350px">위치가 정확히 표시되지 않을 수 있습니다.</div>'; // 인포윈도우에 표시될 내용입니다
 
+        // map.panTo(new kakao.maps.LatLng(this.lat,this.lon));
+        // var gps_content = '<div><img class="pulse" draggable="false" unselectable="on" src="https://ssl.pstatic.net/static/maps/m/pin_rd.png" alt=""></div>';
+        // var currentOverlay = new kakao.maps.CustomOverlay({
+        //     position: new kakao.maps.LatLng(this.lat,this.lon),
+        //     content: gps_content,
+        //     map: map
+        // });
+        // currentOverlay.setMap(map);
         // 마커와 인포윈도우를 표시합니다
         displayMarker(locPosition, message);
         // 장소 검색 객체를 생성합니다
@@ -47,12 +55,26 @@ var infowindow = new kakao.maps.InfoWindow({zIndex: 1});
 
 // 지도에 마커와 인포윈도우를 표시하는 함수입니다
 function displayMarker(locPosition, message) {
-
-    // 마커를 생성합니다
+    var icon = new kakao.maps.MarkerImage(
+        'https://ssl.pstatic.net/static/maps/m/pin_rd.png',
+        new kakao.maps.Size(35, 35),
+        {
+            offset: new kakao.maps.Point(16, 34),
+            alt: "마커 이미지 예제",
+            shape: "poly",
+            coords: "1,20,1,9,5,2,10,0,21,0,27,3,30,9,30,20,17,33,14,33"
+        }
+    );
     var marker = new kakao.maps.Marker({
         map: map,
-        position: locPosition
+        position: locPosition,
+        image: icon
     });
+    // // 마커를 생성합니다
+    // var marker = new kakao.maps.Marker({
+    //     map: map,
+    //     position: locPosition
+    // });
 
     var iwContent = message, // 인포윈도우에 표시할 내용
         iwRemoveable = true;
@@ -120,11 +142,17 @@ function placesSearchCB(data, status, pagination) {
 
     }
 }
+var temp=0;
 
+function clickp(){
+    temp++;
+}
 
 // 검색 결과 목록과 마커를 표출하는 함수입니다
 function displayPlaces(places) {
-    document.getElementById('list_bt').click()
+    if(temp%2==0){
+        document.getElementById('list_bt').click();
+    }
     var listEl = document.getElementById('placesList'),
         menuEl = document.getElementById('menu_wrap'),
         fragment = document.createDocumentFragment(),
@@ -192,8 +220,21 @@ function getListItem(index, places) {
 
     var el = document.createElement('li'),
         itemStr = '<span class="markerbg marker_' + (index + 1) + '"></span>' +
-            '<div class="info">' + '<a href='+ places.place_url +'>'+
-            '   <h5>' + places.place_name + places.category_group_code + '</h5>'+'</a>';
+            '<div class="info">' +
+            '<form action="location/view" method="get">' +
+            '   <input type="hidden" name="id" value="'+places.id+'"> ' +
+            '   <input type="hidden" name="place_name" value="'+places.place_name+'"> ' +
+            '   <input type="hidden" name="category_name" value="'+places.category_name+'"> ' +
+            '   <input type="hidden" name="category_group_name" value="'+places.category_group_name+'"> ' +
+            '   <input type="hidden" name="phone" value="'+places.phone+'"> ' +
+            '   <input type="hidden" name="address_name" value="'+places.address_name+'"> ' +
+            '   <input type="hidden" name="road_address_name" value="'+places.road_address_name+'"> ' +
+            '   <input type="hidden" name="x" value="'+places.x+'"> ' +
+            '   <input type="hidden" name="y" value="'+places.y+'"> ' +
+            '   <input type="submit" value="'+places.place_name+'">'+
+            '</form>';
+            // '<a href='+ places.place_url +'>'+
+            // '   <h5>' + places.place_name + places.category_group_code + '</h5>'+'</a>';
 
     if (places.road_address_name) {
         itemStr += '    <span>' + places.road_address_name + '</span>' +

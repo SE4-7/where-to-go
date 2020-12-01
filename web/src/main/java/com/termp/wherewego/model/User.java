@@ -1,5 +1,6 @@
 package com.termp.wherewego.model;
 
+import lombok.Builder;
 import lombok.Data;
 
 import javax.persistence.*;
@@ -29,5 +30,8 @@ public class User {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id"))
     private List<Role> roles = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user") // orphanRemoval=true 연관된 테이블의 데이터도 함께 삭제가능
+    private List<Comment> comments = new ArrayList<>();
 
 }

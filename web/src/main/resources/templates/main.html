@@ -31,7 +31,7 @@
 
     <div id="map" style="width:100%;height:100%;position:relative;overflow:hidden;">
         <button id="list_bt" class="list_toggler" type="button" data-toggle="collapse" data-target="#menu_wrap"
-                aria-controls="menu_wrap" aria-expanded="false" aria-label="Toggle navigation">
+                aria-controls="menu_wrap" aria-expanded="false" aria-label="Toggle navigation" onclick="clickp()">
             <span>목록</span>
         </button>
 
@@ -46,7 +46,7 @@
     </div>
 
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=856d8e171cf628cab9ca2d66f373b929&libraries=services"></script>
-    <script th:src="@{/js/kakaomap.js}"></script>
+    <script th:src="@{/js/kakaomap.js}" th:inline="javascript"></script>
 </main>
 
 

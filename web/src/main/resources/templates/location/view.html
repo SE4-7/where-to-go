@@ -40,6 +40,20 @@
             }
         });
     });
+    function change(){
+        var sim = document.getElementById(scored).innerText;
+        if (sim < 2.5) {
+            $('.myratings').css('color', 'red');
+            $(".myratings").text(sim);
+        } else if (sim < 3.6) {
+            $('.myratings').css('color', '#ffc107');
+            $(".myratings").text(sim);
+        } else {
+            $('.myratings').css('color', 'green');
+            $(".myratings").text(sim);
+        }
+    }
+    change();
 
     //3개만 체크되게 하기
     function count_ck(obj) {
@@ -95,39 +109,40 @@
 
             <div class="card-body text-center">
                 <form th:action="@{/location/view}" method="post" >
-                    <input type="hidden" name="user" th:value="${userid}">
+                    <input type="hidden" name="user" th:value="${user.user_id}">
                     <input type="hidden" name="location" th:value="${location.id}">
 
                     <div style="display: flex">
                         <div style="margin-left: 50px">
-                            <span class="myratings">0.0</span>
+                            <span class="myratings" th:if="${rating != null}" th:text="${rating}" id="scored">0.0</span>
+                            <span class="myratings" th:if="${rating == null}">0.0</span>
                             <h4 class="mt-1">Rate us</h4>
                         </div>
                         <div class="form-group" style="margin: auto">
                             <fieldset class="rating">
-                                <input type="radio" id="star5" name="rating" value="5"/><label class="full" for="star5"
+                                <input type="radio" id="star5" name="rating" value="5" th:checked="'5'== ${rating}"/><label class="full" for="star5"
                                                                                                title="Awesome - 5 stars"></label>
-                                <input type="radio" id="star4half" name="rating" value="4.5"/><label class="half"
+                                <input type="radio" id="star4half" name="rating" value="4.5" th:checked="'4.5'== ${rating}"/><label class="half"
                                                                                                      for="star4half"
                                                                                                      title="Pretty good - 4.5 stars"></label>
-                                <input type="radio" id="star4" name="rating" value="4"/><label class="full" for="star4"
+                                <input type="radio" id="star4" name="rating" value="4" th:checked="'4'== ${rating}"/><label class="full" for="star4"
                                                                                                title="Pretty good - 4 stars"></label>
-                                <input type="radio" id="star3half" name="rating" value="3.5"/><label class="half"
+                                <input type="radio" id="star3half" name="rating" value="3.5" th:checked="'3.5'== ${rating}"/><label class="half"
                                                                                                      for="star3half"
                                                                                                      title="Meh - 3.5 stars"></label>
-                                <input type="radio" id="star3" name="rating" value="3"/><label class="full" for="star3"
+                                <input type="radio" id="star3" name="rating" value="3" th:checked="'3'== ${rating}"/><label class="full" for="star3"
                                                                                                title="Meh - 3 stars"></label>
-                                <input type="radio" id="star2half" name="rating" value="2.5"/><label class="half"
+                                <input type="radio" id="star2half" name="rating" value="2.5" th:checked="'2.5'== ${rating}"/><label class="half"
                                                                                                      for="star2half"
                                                                                                      title="Kinda bad - 2.5 stars"></label>
-                                <input type="radio" id="star2" name="rating" value="2"/><label class="full" for="star2"
+                                <input type="radio" id="star2" name="rating" value="2" th:checked="'2'== ${rating}"/><label class="full" for="star2"
                                                                                                title="Kinda bad - 2 stars"></label>
-                                <input type="radio" id="star1half" name="rating" value="1.5"/><label class="half"
+                                <input type="radio" id="star1half" name="rating" value="1.5" th:checked="'1.5'== ${rating}"/><label class="half"
                                                                                                      for="star1half"
                                                                                                      title="Meh - 1.5 stars"></label>
-                                <input type="radio" id="star1" name="rating" value="1"/><label class="full" for="star1"
+                                <input type="radio" id="star1" name="rating" value="1" th:checked="'1'== ${rating}"/><label class="full" for="star1"
                                                                                                title="Sucks big time - 1 star"></label>
-                                <input type="radio" id="starhalf" name="rating" value="0.5"/><label class="half" for="starhalf"
+                                <input type="radio" id="starhalf" name="rating" value="0.5" th:checked="'0.5'== ${rating}"/><label class="half" for="starhalf"
                                                                                                     title="Sucks big time - 0.5 stars"></label>
                                 <input type="radio" class="reset-option" name="rating" value="reset"/></fieldset>
                         </div>

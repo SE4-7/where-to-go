@@ -1,34 +1,45 @@
 package com.termp.wherewego.controller;
 
 import com.termp.wherewego.model.Location;
+import com.termp.wherewego.model.User;
 import com.termp.wherewego.repository.LocationRepository;
+import com.termp.wherewego.repository.UserRepository;
+
+import org.python.core.PyFunction;
+import org.python.core.PyInteger;
+import org.python.core.PyObject;
+import org.python.util.PythonInterpreter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.select.Elements;
+
 
 import java.io.IOException;
+import java.util.Objects;
 
 @Controller
 public class LocationController {
     @Autowired
     private LocationRepository locationRepository;
+    @Autowired
+    private UserRepository userRepository;
 
     @PostMapping("/location/form")
     public String hihi(){
         return "view";
     }
 
+    private static PythonInterpreter intPre;
+
     @GetMapping("/location/view")
     public String hihi2(Model model, String id, String place_name, String category_name, String category_group_name, String phone,
                         String address_name, String road_address_name, String x, String y) throws IOException {
         Authentication a = SecurityContextHolder.getContext().getAuthentication();
         String idu = a.getName();
+        User user = userRepository.findById(idu).orElse(null);
         Location location = locationRepository.findById(id).orElse(null);
         if(location==null){
             location = new Location();
@@ -43,8 +54,29 @@ public class LocationController {
             location.setY(y);
             locationRepository.save(location);
         }
-        model.addAttribute("userid",idu);
+        model.addAttribute("user",user);
+        String temp=null;
+        for(int i = 0; i < Objects.requireNonNull(user).getComments().size(); i++){
+            if (user.getComments().get(i).getLocation().getId().equals(location.getId())){
+                temp = user.getComments().get(i).getRating();
+            }
+        }
+        model.addAttribute("rating",temp);
         model.addAttribute("location",location);
         return "location/view";
+    }
+
+    @GetMapping("/test")
+    public String test(Model model){
+        intPre = new PythonInterpreter();
+        intPre.execfile("src/main/clt/test.py");
+        // intPre.exec("print(testFunc(5,10))");
+
+        PyFunction pyFunction = (PyFunction) intPre.get("testFunc", PyFunction.class);
+        int a = 1, b = 5, c = 7;
+        PyObject pyObject = pyFunction.__call__(new PyInteger(a), new PyInteger(b), new PyInteger(c));
+        System.out.println(pyObject);
+        model.addAttribute("result",pyObject.toString());
+        return "/test";
     }
 }

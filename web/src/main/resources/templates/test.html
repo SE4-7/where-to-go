@@ -1,0 +1,40 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/common :: head('main', ~{::link})">
+    <style>
+        .bd-placeholder-img {
+            font-size: 1.125rem;
+            text-anchor: middle;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        @media (min-width: 768px) {
+            .bd-placeholder-img-lg {
+                font-size: 3.5rem;
+            }
+        }
+    </style>
+    <link th:href="@{/css/main.css}" rel="stylesheet">
+    <link th:href="@{/css/addrlist.css}" rel="stylesheet">
+</head>
+
+<body>
+
+<header th:replace="fragments/common :: header('main')"></header>
+
+<!-- Begin page content -->
+<main role="main" class="flex-shrink-0">
+
+    <div class="container">
+        <h1 th:text="${result}"></h1>
+    </div>
+</main>
+
+
+<footer th:replace="fragments/common :: footer"></footer>
+</body>
+
+</html>

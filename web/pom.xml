@@ -85,6 +85,14 @@
             <artifactId>jsoup</artifactId>
             <version>1.13.1</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/org.python/jython -->
+        <!-- https://mvnrepository.com/artifact/org.python/jython-standalone -->
+        <dependency>
+            <groupId>org.python</groupId>
+            <artifactId>jython-standalone</artifactId>
+            <version>2.7.2</version>
+        </dependency>
+
 
     </dependencies>
 

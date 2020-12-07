@@ -68,15 +68,8 @@ public class LocationController {
 
     @GetMapping("/test")
     public String test(Model model){
-        intPre = new PythonInterpreter();
-        intPre.execfile("src/main/clt/test.py");
-        // intPre.exec("print(testFunc(5,10))");
-
-        PyFunction pyFunction = (PyFunction) intPre.get("testFunc", PyFunction.class);
-        int a = 1, b = 5, c = 7;
-        PyObject pyObject = pyFunction.__call__(new PyInteger(a), new PyInteger(b), new PyInteger(c));
-        System.out.println(pyObject);
-        model.addAttribute("result",pyObject.toString());
+        String result = CallMain.mainfunc("1","2","3");
+        model.addAttribute("result",result);
         return "/test";
     }
 }

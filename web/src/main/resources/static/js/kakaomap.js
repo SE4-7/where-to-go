@@ -12,6 +12,8 @@ var map = new kakao.maps.Map(mapContainer, mapOption);
 
 var lat, lon;
 
+var mylat, mylon;
+
 //=======================================================================
 
 // HTML5의 geolocation으로 사용할 수 있는지 확인합니다
@@ -20,8 +22,11 @@ if (navigator.geolocation) {
     // GeoLocation을 이용해서 접속 위치를 얻어옵니다
     navigator.geolocation.getCurrentPosition(function(position) {
 
-        lat = position.coords.latitude, // 위도
+        lat = position.coords.latitude; // 위도
         lon = position.coords.longitude; // 경도
+        mylat = position.coords.latitude; // 위도
+        mylon = position.coords.longitude; // 경도
+
         console.log(lat+' '+lon);
         var locPosition = new kakao.maps.LatLng(lat, lon), // 마커가 표시될 위치를 geolocation으로 얻어온 좌표로 생성합니다
             message = '<div style="padding:5px; width: 350px">위치가 정확히 표시되지 않을 수 있습니다.</div>'; // 인포윈도우에 표시될 내용입니다
@@ -43,6 +48,8 @@ if (navigator.geolocation) {
 } else { // HTML5의 GeoLocation을 사용할 수 없을때 마커 표시 위치와 인포윈도우 내용을 설정합니다
     lat = null;
     lon = null;
+    mylat = null;
+    mylon = null;
     var locPosition = new kakao.maps.LatLng(33.450701, 126.570667),
         message = 'geolocation을 사용할수 없어요..'
 
@@ -93,7 +100,10 @@ function displayMarker(locPosition, message) {
 }
 
 //==================================================================
-
+function mylocation(){
+    var locPosition2 = new kakao.maps.LatLng(mylat, mylon);
+    map.setCenter(locPosition2);
+}
 // 키워드 검색을 요청하는 함수입니다
 function searchPlaces() {
 
@@ -104,12 +114,31 @@ function searchPlaces() {
     }
     console.log(lat+' '+lon);
     // 장소검색 객체를 통해 키워드로 장소검색을 요청합니다
+
+
     ps.keywordSearch(keyword, placesSearchCB, {
         category_group_code : 'FD6',
-        location : new kakao.maps.LatLng(lat, lon)
+        location : new kakao.maps.LatLng(lat, lon),
+        bounds : map.getBounds()
     });
 }
+function searchPlaces2(x,y) {
 
+    var keyword = document.getElementById('keyword').value;
+
+    if (!keyword.replace(/^\s+|\s+$/g, '')) {
+        return false;
+    }
+    console.log(lat+' '+lon);
+    // 장소검색 객체를 통해 키워드로 장소검색을 요청합니다
+
+
+    ps.keywordSearch(keyword, placesSearchCB, {
+        category_group_code : 'FD6',
+        location : new kakao.maps.LatLng(x, y),
+        bounds : map.getBounds()
+    });
+}
 // 장소검색이 완료됐을 때 호출되는 콜백함수 입니다
 function placesSearchCB(data, status, pagination) {
     if (status === kakao.maps.services.Status.OK) {
@@ -190,7 +219,14 @@ function displayPlaces(places) {
                 kakao.maps.event.addListener(marker, 'mouseout', function () {
                     infowindow.close();
                 });
+// 마우스 드래그로 지도 이동이 완료되었을 때 마지막 파라미터로 넘어온 함수를 호출하도록 이벤트를 등록합니다
+                kakao.maps.event.addListener(map, 'dragend', function() {
+                    // 지도 중심좌표를 얻어옵니다
+                    var latlng = map.getCenter();
+                    lat = latlng.getLat();
+                    lng = latlng.getLng();
 
+                });
                 itemEl.onmouseover = function () {
                     displayInfowindow(marker, title);
                 };
@@ -207,7 +243,7 @@ function displayPlaces(places) {
             menuEl.scrollTop = 0;
 
             // 검색된 장소 위치를 기준으로 지도 범위를 재설정합니다
-            map.setBounds(bounds);
+            // map.setBounds(bounds);
         // }
 
 
@@ -280,6 +316,7 @@ function removeMarker() {
     }
     markers = [];
 }
+
 
 // 검색결과 목록 하단에 페이지번호를 표시는 함수입니다
 function displayPagination(pagination) {

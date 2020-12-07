@@ -24,8 +24,7 @@ main {
 	height: 100%;
 }
 .bg-purple {
-	background-color: #8b57a0;
-	height: 60px;
+	background-color: #8b57a0!important;
 }
 footer .section-title {
     text-align: center;

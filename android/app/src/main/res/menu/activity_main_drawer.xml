@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:title="첫번째"/>
+
+    <item
+        android:title="두번째"/>
+
+    <item
+        android:title="세번째"/>
+</menu>

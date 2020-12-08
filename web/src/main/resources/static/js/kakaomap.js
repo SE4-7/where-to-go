@@ -122,6 +122,24 @@ function searchPlaces() {
         bounds : map.getBounds()
     });
 }
+
+// 키워드 검색을 요청하는 함수입니다
+function searchPlaces3() {
+    var keyword = document.getElementById('result').value;
+    if (!keyword.replace(/^\s+|\s+$/g, '')) {
+        return false;
+    }
+    console.log(lat+' '+lon);
+    // 장소검색 객체를 통해 키워드로 장소검색을 요청합니다
+
+
+    ps.keywordSearch(keyword, placesSearchCB, {
+        category_group_code : 'FD6',
+        location : new kakao.maps.LatLng(lat, lon),
+        bounds : map.getBounds()
+    });
+}
+
 function searchPlaces2(x,y) {
 
     var keyword = document.getElementById('keyword').value;

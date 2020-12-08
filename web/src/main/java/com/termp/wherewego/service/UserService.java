@@ -26,7 +26,8 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public void update(User user, String id) {
+    public void update(User user) {
+        String id = user.getUser_id();
         User u = userRepository.findById(id).orElse(null);
         if (u != null){
             u.setUser_name(user.getUser_name());

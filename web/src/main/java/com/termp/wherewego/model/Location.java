@@ -27,4 +27,7 @@ public class Location {
     @OneToMany(mappedBy = "location") // orphanRemoval=true 연관된 테이블의 데이터도 함께 삭제가능
     private List<Comment> comments = new ArrayList<>();
 
+    @OneToMany(mappedBy = "location") // orphanRemoval=true 연관된 테이블의 데이터도 함께 삭제가능
+    private List<Bookmark> bookmarks = new ArrayList<>();
+
 }

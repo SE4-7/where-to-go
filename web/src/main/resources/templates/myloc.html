@@ -1,0 +1,62 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/common :: head('main', ~{::link})">
+    <style>
+        .bd-placeholder-img {
+            font-size: 1.125rem;
+            text-anchor: middle;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        @media (min-width: 768px) {
+            .bd-placeholder-img-lg {
+                font-size: 3.5rem;
+            }
+        }
+    </style>
+    <link th:href="@{/css/main.css}" rel="stylesheet">
+    <link th:href="@{/css/addrlist.css}" rel="stylesheet">
+</head>
+
+<body>
+
+<header th:replace="fragments/common :: header('main')"></header>
+
+<!-- Begin page content -->
+<main role="main" class="flex-shrink-0" style="height: auto">
+
+
+    <!-- Page Content -->
+    <div class="container">
+
+        <!-- Jumbotron Header -->
+        <header class="jumbotron my-4">
+            <h1 class="display-3">평가한 장소</h1>
+        </header>
+
+        <!-- Page Features -->
+        <div class="row text-center">
+
+            <div class="card" style="width: 18rem; margin: 20px 20px 20px 20px" th:each="comment : ${user.comments}">
+                <div class="card-body">
+                    <h5 class="card-title" th:text="${comment.location.place_name}">Card title</h5>
+                    <h6 class="card-subtitle mb-2 text-muted" th:text="${comment.location.category_name}">Card subtitle</h6>
+                    <p class="card-text"></p>
+                    <a th:href="@{/view2(id=${comment.location.id})}" class="card-link">상세페이지</a>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+    <!-- /.container -->
+</main>
+
+
+<footer th:replace="fragments/common :: footer"></footer>
+</body>
+
+</html>

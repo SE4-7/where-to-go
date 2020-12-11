@@ -8,45 +8,153 @@
     android:fitsSystemWindows="true"
     tools:openDrawer="start">
 
-    <FrameLayout
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/mapView"
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"/>
+            android:layout_height="match_parent">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/mapView"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
 
-            <ImageButton
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@drawable/ic_baseline_dehaze_24"/>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:background="@drawable/searchview_shadow">
 
-            <SearchView
-                android:id="@+id/searchview_map"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="#FFFFFFFF"
-                android:iconifiedByDefault="false"
-                android:searchIcon="@null"/>
+                    <Button
+                        android:id="@+id/button_search"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="40dp"
+                        android:gravity="start|center_vertical"
+                        android:paddingStart="10dp"
+                        android:background="#00FFFFFF"
+                        android:iconifiedByDefault="false"
+                        android:searchIcon="@null"
+                        android:text="장소를 입력하세요"
+                        android:textSize="18sp"
+                        android:textColor="#FFA9A9A9"/>
 
-        </LinearLayout>
+                </LinearLayout>
 
-    </FrameLayout>
+                <Button
+                    android:id="@+id/button_menu"
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
+                    android:layout_marginTop="21dp"
+                    android:layout_marginStart="15dp"
+                    android:paddingEnd="5dp"
+                    android:background="#00FFFFFF"
+                    android:drawableEnd="@drawable/ic_baseline_dehaze_24"/>
+
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/button_list"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="end|bottom"
+                    android:layout_margin="16dp"
+                    android:src="@drawable/ic_baseline_dehaze_24"
+                    app:backgroundTint="#FFFFFFFF"
+                    app:borderWidth="0dp"/>
+
+                <Button
+                    android:id="@+id/button_my_location"
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
+                    android:layout_gravity="bottom"
+                    android:layout_marginStart="10dp"
+                    android:layout_marginBottom="10dp"
+                    android:foreground="@drawable/ic_baseline_my_location_24"
+                    android:foregroundGravity="center"
+                    android:background="#FFFFFFFF"/>
+
+                <Button
+                    android:id="@+id/button_zoom_in"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginTop="50dp"
+                    android:layout_marginEnd="10dp"
+                    android:layout_gravity="end|center_vertical"
+                    android:foreground="@drawable/ic_baseline_add_24"
+                    android:foregroundGravity="center"
+                    android:background="@drawable/zoom_in_button_border" />
+
+                <Button
+                    android:id="@+id/button_zoom_out"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="10dp"
+                    android:layout_marginTop="90.5dp"
+                    android:layout_gravity="end|center_vertical"
+                    android:foreground="@drawable/ic_baseline_horizontal_rule_24"
+                    android:foregroundGravity="center"
+                    android:background="@drawable/zoom_out_button_border"/>
+
+                <View
+                    android:layout_width="40dp"
+                    android:layout_height="0.5dp"
+                    android:layout_marginEnd="10dp"
+                    android:layout_marginTop="70.5dp"
+                    android:layout_gravity="end|center_vertical"
+                    android:background="#FF888888"/>
+
+        </FrameLayout>
+
+        <include layout="@layout/bottom_sheet"/>
+
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+    <include layout="@layout/activity_list"/>
+
+    <include layout="@layout/activity_search"/>
+
+    <FrameLayout
+        android:id="@+id/container_fragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"/>
 
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/nav_view"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:layout_gravity="start"
-        android:paddingTop="30dp"
         android:fitsSystemWindows="true"
+        android:overScrollMode="never"
         app:headerLayout="@layout/nav_header_main"
-        app:menu="@menu/activity_main_drawer"/>
+        app:menu="@menu/activity_main_drawer"
+        app:itemTextAppearance="@style/MenuText"
+        app:itemBackground="@drawable/menu_background">
+
+        <LinearLayout
+            android:id="@+id/logout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:gravity="center_vertical"
+            android:padding="10dp"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="10dp"
+                android:src="@drawable/ic_baseline_exit_to_app_24"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="로그아웃"
+                android:textSize="20sp"/>
+
+        </LinearLayout>
+
+    </com.google.android.material.navigation.NavigationView>
 
 </androidx.drawerlayout.widget.DrawerLayout>

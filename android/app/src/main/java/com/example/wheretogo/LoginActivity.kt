@@ -6,7 +6,6 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import net.daum.android.map.MapActivity
 
 class LoginActivity : AppCompatActivity() {
     lateinit var loginId: EditText
@@ -26,6 +25,10 @@ class LoginActivity : AppCompatActivity() {
         loginButton.setOnClickListener {
             val intent = Intent(this, MapActivity::class.java)
 
+            val id = loginId.editableText.toString()
+            val pw = loginId.editableText.toString()
+
+            // 이름, 생년월일, 성별 db에서 가져와 intent에 전달(다른 fragment에 뿌려주기 위함)
             // TODO("로그인 처리")
 
             startActivity(intent)

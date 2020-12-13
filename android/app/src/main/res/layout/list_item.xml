@@ -7,7 +7,7 @@
     android:orientation="vertical">
 
     <LinearLayout
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal">
 
@@ -15,7 +15,10 @@
             android:id="@+id/place_name"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="우림각"
+            android:maxWidth="200dp"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:text="우림각asfeaffwfwafewf"
             android:textSize="30sp"/>
 
         <TextView
@@ -23,69 +26,102 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="10dp"
-            android:text="중화요리"
+            android:maxWidth="100dp"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:text="중화요리asdfasfsdf"
             android:textSize="20sp"/>
+
+        <TextView
+            android:id="@+id/place_distance"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="end"
+            android:text="345m"
+            android:textColor="#FF0066FF"/>
 
     </LinearLayout>
 
     <LinearLayout
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/place_score"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="3.1"
+                    android:textSize="15sp"/>
+
+                <RatingBar
+                    android:id="@+id/place_rating_bar"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="5dp"
+                    android:numStars="5"
+                    android:max="5"
+                    android:stepSize="0.1"
+                    android:rating="3.1"
+                    style="@style/Widget.AppCompat.RatingBar.Small"/>
+
+                <TextView
+                    android:id="@+id/place_score_count"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="(7건)"
+                    android:textSize="15sp"/>
+
+                <View
+                    android:layout_width="0.5dp"
+                    android:layout_height="20dp"
+                    android:layout_marginHorizontal="10dp"
+                    android:background="@android:color/darker_gray"/>
+
+                <TextView
+                    android:id="@+id/place_review_count"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="리뷰 0"
+                    android:textSize="15sp"/>
+
+            </LinearLayout>
 
         <TextView
-            android:id="@+id/place_score"
+            android:id="@+id/place_address"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="3.1"
-            android:textSize="15sp"/>
-
-        <RatingBar
-            android:id="@+id/place_rating_bar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginHorizontal="5dp"
-            android:numStars="5"
-            android:max="5"
-            android:stepSize="0.1"
-            android:rating="3.1"
-            style="@style/Widget.AppCompat.RatingBar.Small"/>
+            android:layout_marginTop="10dp"
+            android:text="경기도 평택시 팽성읍 안정순환로 32번길 35-4" />
 
         <TextView
-            android:id="@+id/place_score_count"
+            android:id="@+id/place_phone"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="(7건)"
-            android:textSize="15sp"/>
+            android:layout_marginTop="3dp"
+            android:text="031-691-4106" />
 
-        <View
-            android:layout_width="0.5dp"
-            android:layout_height="20dp"
-            android:layout_marginHorizontal="10dp"
-            android:background="@android:color/darker_gray"/>
+        </LinearLayout>
 
-        <TextView
-            android:id="@+id/place_review_count"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="리뷰 0"
-            android:textSize="15sp"/>
+        <Button
+            android:id="@+id/button_favorites"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
+            android:background="@drawable/ic_baseline_favorite_border_24"/>
 
     </LinearLayout>
-
-    <TextView
-        android:id="@+id/place_address"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:text="경기도 평택시 팽성읍 안정순환로 32번길 35-4" />
-
-    <TextView
-        android:id="@+id/place_phone"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="3dp"
-        android:text="031-691-4106" />
 
 </LinearLayout>

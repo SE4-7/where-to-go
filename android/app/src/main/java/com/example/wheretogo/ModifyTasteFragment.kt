@@ -1,6 +1,5 @@
 package com.example.wheretogo
 
-import android.app.DatePickerDialog
 import android.graphics.Color
 import android.os.AsyncTask
 import android.os.Bundle
@@ -8,7 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
-import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import java.io.BufferedReader
@@ -17,54 +16,19 @@ import java.lang.Exception
 import java.net.HttpURLConnection
 import java.net.URL
 
-class Food(var number: Int, var name: String, var isSelected: Boolean = false, var imageSrc: String = "logo01")
-
-class SignUpActivity : AppCompatActivity() {
-    lateinit var signUpId: EditText
-    lateinit var signUpPw: EditText
-    lateinit var signUpName: EditText
-    lateinit var signUpBirth: EditText
-    lateinit var radioGroupSex: RadioGroup
-
-    lateinit var tasteLayout: LinearLayout
+class ModifyTasteFragment : Fragment() {
     lateinit var foodRecyclerView: RecyclerView
     lateinit var foodViewAdapter: FoodViewAdapter
     lateinit var foodViewManager: RecyclerView.LayoutManager
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_sign_up)
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        val view = inflater.inflate(R.layout.activity_taste, container, false)
 
-        signUpId = findViewById(R.id.edittext_sign_up_id)
-        signUpPw = findViewById(R.id.edittext_sign_up_pw)
-        signUpName = findViewById(R.id.edittext_sign_up_name)
-        signUpBirth = findViewById(R.id.edittext_sign_up_birth)
-        signUpBirth.setOnClickListener {
-            val datePickerDialog = DatePickerDialog(this)
-            datePickerDialog.setOnDateSetListener { view, year, month, dayOfMonth ->
-                signUpBirth.setText("$year-${month+1}-$dayOfMonth")
-            }
-            datePickerDialog.show()
-        }
-
-        var gender = ""
-
-        radioGroupSex = findViewById(R.id.radiogroup_sex)
-        radioGroupSex.setOnCheckedChangeListener { radioGroup, i ->
-            when (i) {
-                R.id.radiobutton_man -> { gender = "남자" }
-                R.id.radiobutton_women -> { gender = "여자" }
-            }
-        }
-
-        val signUpButton: Button = findViewById(R.id.button_sign_up)
-        signUpButton.setOnClickListener {
-            tasteLayout.visibility = View.VISIBLE
-        }
-
-        tasteLayout = findViewById(R.id.layout_taste)
-        tasteLayout.visibility = View.GONE
-        foodViewManager = GridLayoutManager(this, 2)
+        foodViewManager = GridLayoutManager(context, 2)
         foodViewAdapter = FoodViewAdapter()
         foodViewAdapter.addItem(Food(0, "비빔밥", false, "bibimbap"))
         foodViewAdapter.addItem(Food(1, "치킨", false, "chicken"))
@@ -76,36 +40,27 @@ class SignUpActivity : AppCompatActivity() {
         foodViewAdapter.addItem(Food(7, "설렁탕", false, "soup"))
         foodViewAdapter.addItem(Food(8, "스테이크", false, "steak"))
         foodViewAdapter.addItem(Food(9, "떡볶이", false, "tteokbokki"))
-        foodRecyclerView = findViewById(R.id.recyclerview_food)
+        foodRecyclerView = view.findViewById(R.id.recyclerview_food)
         foodRecyclerView.apply {
             setHasFixedSize(true)
             layoutManager = foodViewManager
             adapter = foodViewAdapter
         }
 
-        val selectionCompleteButton: Button = findViewById(R.id.button_selection_complete)
-        selectionCompleteButton.setOnClickListener {
-            val id = signUpId.editableText.toString()
-            val pw = signUpPw.editableText.toString()
-            val name = signUpName.editableText.toString()
-            val birth = signUpBirth.editableText.toString()
-            val choice = foodViewAdapter.getChoice()
-
-            SignUp().execute(
-                "http://$IP_ADDRESS/wheretogo/signup.php",
-                id, pw, name, gender, birth, choice
+        val updateButton: Button = view.findViewById(R.id.button_selection_complete)
+        updateButton.text = "수정하기"
+        updateButton.setOnClickListener {
+            UpdateContents().execute(
+                "http://$IP_ADDRESS/wheretogo/update.php",
+                "update user set choice='${foodViewAdapter.getChoice()}' where id='$userId'"
             )
 
-            finish()
+            val fm = activity?.supportFragmentManager
+            fm?.beginTransaction()?.remove(this)?.commit()
+            fm?.popBackStack()
         }
-    }
 
-    override fun onBackPressed() {
-        if (tasteLayout.visibility == View.GONE) {
-            finish()
-        } else {
-            tasteLayout.visibility = View.GONE
-        }
+        return view
     }
 
     inner class FoodViewAdapter : RecyclerView.Adapter<FoodViewAdapter.ViewHolder>() {
@@ -136,7 +91,7 @@ class SignUpActivity : AppCompatActivity() {
 
             fun setItem(item: Food) {
                 foodName.text = item.name
-                val resId = resources.getIdentifier(item.imageSrc, "drawable", packageName)
+                val resId = resources.getIdentifier(item.imageSrc, "drawable", activity?.packageName)
                 foodImage.setImageResource(resId)
             }
         }
@@ -170,17 +125,12 @@ class SignUpActivity : AppCompatActivity() {
         }
     }
 
-    inner class SignUp : AsyncTask<String, Void, String>() {
+    inner class UpdateContents : AsyncTask<String, Void, String>() {
         override fun doInBackground(vararg p0: String?): String {
-            val id = p0[1]
-            val pw = p0[2]
-            val name = p0[3]
-            val gender = p0[4]
-            val birth = p0[5]
-            val choice = p0[6]
+            val query = p0[1]
 
             val serverURL = p0[0]
-            val postParameters = "id=$id&pw=$pw&name=$name&gender=$gender&birth=$birth&choice=$choice"
+            val postParameters = "query=$query"
 
             try {
                 val url = URL(serverURL)
@@ -226,20 +176,6 @@ class SignUpActivity : AppCompatActivity() {
 
         override fun onPostExecute(result: String?) {
             super.onPostExecute(result)
-
-            when {
-                result?.contains("성공")!! -> {
-                    Toast.makeText(applicationContext, result, Toast.LENGTH_LONG).show()
-
-                    finish()
-                }
-                result.contains("실패") -> {
-                    Toast.makeText(applicationContext, result, Toast.LENGTH_LONG).show()
-                }
-                result.contains("PRIMARY") -> {
-                    signUpId.text.clear()
-                }
-            }
         }
     }
 }

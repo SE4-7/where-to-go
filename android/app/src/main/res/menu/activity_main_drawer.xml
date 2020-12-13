@@ -3,13 +3,13 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/modify_info"
-        android:title="수정할까?" />
+        android:title="정보수정" />
 
     <item
         android:id="@+id/favorite"
-        android:title="여기갈까?"/>
+        android:title="즐겨찾기"/>
 
     <item
-        android:id="@+id/recent_record"
-        android:title="뭐봤더라?"/>
+        android:id="@+id/modify_taste"
+        android:title="취향수정"/>
 </menu>

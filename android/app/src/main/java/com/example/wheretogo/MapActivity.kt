@@ -4,15 +4,12 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.content.pm.Signature
-import android.graphics.Color
 import android.os.AsyncTask
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Handler
 import android.util.Base64
-import android.view.LayoutInflater
-import android.view.MenuItem
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import androidx.core.app.ActivityCompat
@@ -21,6 +18,7 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.chaquo.python.Python
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.navigation.NavigationView
@@ -34,7 +32,43 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
 
-class MapActivity : AppCompatActivity(), View.OnClickListener, NavigationView.OnNavigationItemSelectedListener, MapView.CurrentLocationEventListener, MapView.POIItemEventListener, MapView.MapViewEventListener {
+lateinit var mapView: MapView
+
+class PlaceInfo(private val documents: JSONObject) {
+    val id = documents.getString("id")
+    val placeName = documents.getString("place_name")
+    val categoryName = documents.getString("category_name")
+    val categoryGroupCode = documents.getString("category_group_code")
+    val categoryGroupName = documents.getString("category_group_name")
+    val phone = documents.getString("phone")
+    val addressName = documents.getString("address_name")
+    val roadAddressName = documents.getString("road_address_name")
+    val placeUrl = documents.getString("place_url")
+    val distance = documents.getString("distance")
+    val x = documents.getDouble("x")
+    val y = documents.getDouble("y")
+    val point = MapPoint.mapPointWithGeoCoord(y, x)
+    val item = MapPOIItem()
+    var favorites = false
+    var scoreAvg = 0.0
+    var scoreCount = 0
+    var reviewCount = 0
+
+    fun addMarker() {
+        item.itemName = placeName
+        item.tag = id.toInt()
+        item.mapPoint = point
+        item.markerType = MapPOIItem.MarkerType.BluePin
+        item.selectedMarkerType = MapPOIItem.MarkerType.RedPin
+        mapView.addPOIItem(item)
+    }
+
+    fun removeMarker() {
+        mapView.removePOIItem(item)
+    }
+}
+
+class MapActivity : AppCompatActivity(), View.OnClickListener, NavigationView.OnNavigationItemSelectedListener, MapView.CurrentLocationEventListener, MapView.POIItemEventListener, MapView.MapViewEventListener, OnCallbackFromFavorites {
     // For Map UI
     private lateinit var drawerLayout: DrawerLayout
     private lateinit var navigationView: NavigationView
@@ -45,14 +79,14 @@ class MapActivity : AppCompatActivity(), View.OnClickListener, NavigationView.On
     private lateinit var zoomOutButton: Button
     private lateinit var myLocationButton: Button
     private lateinit var listButton: FloatingActionButton
-    private lateinit var mapView: MapView
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<LinearLayout>
 
     // For changing fragment on navigation view
     private lateinit var modifyInfoFragment: Fragment
     private lateinit var passwordCheckFragment: Fragment
     private lateinit var favoriteFragment: Fragment
-    private lateinit var recentRecordFragment: Fragment
+    private lateinit var ratingManagementFragment: Fragment
+    private lateinit var modifyTasteFragment: Fragment
     private lateinit var fragmentContainer: FrameLayout
 
     // For List UI
@@ -70,6 +104,7 @@ class MapActivity : AppCompatActivity(), View.OnClickListener, NavigationView.On
     private lateinit var searchViewAdapter: SearchViewAdapter
     private lateinit var searchViewManager: RecyclerView.LayoutManager
 
+    // For Bottom Sheet
     private lateinit var placeName: TextView
     private lateinit var placeCategory: TextView
     private lateinit var placeScore: TextView
@@ -78,12 +113,38 @@ class MapActivity : AppCompatActivity(), View.OnClickListener, NavigationView.On
     private lateinit var placeReviewCount: TextView
     private lateinit var placeAddress: TextView
     private lateinit var placePhone: TextView
+    private lateinit var placeDistance: TextView
+    private lateinit var favoritesButton: Button
 
-    var keyword = ""
+    private lateinit var myScoreRatingBar: RatingBar
+    private lateinit var averageRatingTextView: TextView
+    private lateinit var averageRatingBar: RatingBar
+    private lateinit var reviewCount: TextView
+    private lateinit var reviewRecyclerView: RecyclerView
+    private lateinit var reviewViewManager: RecyclerView.LayoutManager
+    private lateinit var reviewViewAdapter: ReviewAdapter
+    private lateinit var comment: EditText
+    private lateinit var commentButton: Button
+
+    // For sort list
+    private lateinit var keywordButton: Button
+    private lateinit var baseLocationRadioGroup: RadioGroup
+    private lateinit var sortListBy: LinearLayout
+    private lateinit var sortListByText: TextView
+
+    var keyword = "양식"
+    var page = 0
+    var currentX = 0.0
+    var currentY = 0.0
+    var sort = "accuracy"
+    var userId = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_map)
+
+        val intent = intent
+        userId = intent.getStringExtra("userId")!!
 
         // For Map UI
         drawerLayout = findViewById(R.id.drawer_layout)
@@ -95,11 +156,13 @@ class MapActivity : AppCompatActivity(), View.OnClickListener, NavigationView.On
         logoutButton = findViewById(R.id.logout)
         logoutButton.setOnClickListener {
             Toast.makeText(this, "로그아웃!", Toast.LENGTH_LONG).show()
+            finish()
         }
         modifyInfoFragment = ModifyInfoFragment()
         passwordCheckFragment = PasswordCheckFragment()
         favoriteFragment = FavoriteFragment()
-        recentRecordFragment = RecentRecordFragment()
+        ratingManagementFragment = RatingManagementFragment()
+        modifyTasteFragment = ModifyTasteFragment()
         fragmentContainer = findViewById(R.id.container_fragment)
 
         menuButton = findViewById(R.id.button_menu)
@@ -123,33 +186,46 @@ class MapActivity : AppCompatActivity(), View.OnClickListener, NavigationView.On
         mapButton = findViewById(R.id.button_map)
 
         // For Search UI
+        UpdateSearchHistory().execute(
+            "http://$IP_ADDRESS/wheretogo/select_search_history.php",
+            "select * from search_history where id='$userId'"
+        )
         searchLayout = findViewById(R.id.layout_search)
         searchLayout.visibility = View.GONE
         backButton = findViewById(R.id.button_back)
+        keywordButton = findViewById(R.id.button_keyword)
         searchView = findViewById(R.id.searchview_map)
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
-                Toast.makeText(applicationContext, "검색 완료!", Toast.LENGTH_SHORT).show()
-
-                // 키보드 띄우기
                 val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
                 imm.hideSoftInputFromWindow(searchView.windowToken, 0)
 
-                keyword = searchView.query.toString()
-                searchViewAdapter.addItem(keyword)
+                listViewAdapter.clearItems()
+                keyword = query!!
+                keywordButton.text = keyword
+                searchButton.text = keyword
 
-                updatePlace()
+                updatePlace(sort)
 
                 searchView.setQuery("", false)
                 searchView.clearFocus()
                 searchLayout.visibility = View.GONE
                 bottomSheetBehavior.state = BottomSheetBehavior.STATE_HIDDEN
-                mapView.fitMapViewAreaToShowAllPOIItems()
+
+                UpdateContents().execute(
+                    "http://$IP_ADDRESS/wheretogo/update.php",
+                    "insert into search_history (id, word) values ('$userId', '$query')"
+                )
+
+                UpdateSearchHistory().execute(
+                    "http://$IP_ADDRESS/wheretogo/select_search_history.php",
+                    "select * from search_history where id='$userId'"
+                )
+
                 return true
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
-                Toast.makeText(applicationContext, "검색 중...", Toast.LENGTH_SHORT).show()
                 return false
             }
 
@@ -165,6 +241,8 @@ class MapActivity : AppCompatActivity(), View.OnClickListener, NavigationView.On
 
         setButtonClickListener()
 
+        startLocationService()
+
         mapView = MapView(this)
         mapView.setCurrentLocationEventListener(this)
         mapView.setMapViewEventListener(this)
@@ -173,8 +251,6 @@ class MapActivity : AppCompatActivity(), View.OnClickListener, NavigationView.On
         mapView.setShowCurrentLocationMarker(true)
         val mapViewContainer: ViewGroup = findViewById(R.id.mapView)
         mapViewContainer.addView(mapView)
-
-        startLocationService()
 
         val bottomSheet: LinearLayout = findViewById(R.id.bottom_sheet)
         bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet)
@@ -230,6 +306,63 @@ class MapActivity : AppCompatActivity(), View.OnClickListener, NavigationView.On
         placeReviewCount = findViewById(R.id.place_review_count)
         placeAddress = findViewById(R.id.place_address)
         placePhone = findViewById(R.id.place_phone)
+        placeDistance = findViewById(R.id.place_distance)
+        favoritesButton = findViewById(R.id.button_favorites)
+
+        myScoreRatingBar = findViewById(R.id.ratingbar_my_score)
+        averageRatingTextView = findViewById(R.id.textview_average_rating)
+        averageRatingBar = findViewById(R.id.ratingbar_average_rating)
+        reviewCount = findViewById(R.id.textview_review_count)
+        reviewViewManager = LinearLayoutManager(this)
+        reviewViewAdapter = ReviewAdapter()
+        reviewRecyclerView = findViewById(R.id.recyclerview_review)
+        reviewRecyclerView.apply {
+            setHasFixedSize(true)
+            layoutManager = reviewViewManager
+            adapter = reviewViewAdapter
+        }
+        comment = findViewById(R.id.edittext_comment)
+        commentButton = findViewById(R.id.button_comment)
+
+        baseLocationRadioGroup = findViewById(R.id.radiogroup_base_location)
+        sortListBy = findViewById(R.id.sort_list_by)
+        sortListByText = findViewById(R.id.textview_sort_list_by)
+
+        registerForContextMenu(sortListBy)
+        sortListBy.setOnClickListener {
+            val popup = PopupMenu(this, it)
+            popup.menuInflater.inflate(R.menu.list_sort_menu, popup.menu)
+            popup.setOnMenuItemClickListener { item ->
+                when (item.itemId) {
+                    R.id.menu_accuracy -> {
+                        sortListByText.text = "정확도순"
+                        if (sort != "accuracy") {
+                            sort = "accuracy"
+                            listViewAdapter.clearItems()
+                            updatePlace(sort)
+                        }
+                    }
+                    R.id.menu_distance -> {
+                        sortListByText.text = "거리순"
+                        if (sort != "distance") {
+                            sort = "distance"
+                            listViewAdapter.clearItems()
+                            updatePlace(sort)
+                        }
+                    }
+                    R.id.menu_rating -> {
+                        sortListByText.text = "평점순"
+                        listViewAdapter.sortByRating()
+                    }
+                    else -> false
+                }
+                Handler().postDelayed({
+                    listViewAdapter.notifyDataSetChanged()
+                }, 1000)
+                true
+            }
+            popup.show()
+        }
     }
 
     override fun onRequestPermissionsResult(
@@ -284,6 +417,8 @@ class MapActivity : AppCompatActivity(), View.OnClickListener, NavigationView.On
         mapButton.setOnClickListener(this)
 
         backButton.setOnClickListener(this)
+
+        keywordButton.setOnClickListener(this)
     }
 
     override fun onClick(p0: View?) {
@@ -303,15 +438,24 @@ class MapActivity : AppCompatActivity(), View.OnClickListener, NavigationView.On
             R.id.button_zoom_out -> { mapView.zoomOut(true ) }
             R.id.button_my_location -> {
                 mapView.setZoomLevel(2, false)
-                when (mapView.currentLocationTrackingMode) {
-                    MapView.CurrentLocationTrackingMode.TrackingModeOff -> mapView.currentLocationTrackingMode = MapView.CurrentLocationTrackingMode.TrackingModeOnWithoutHeading
-                    MapView.CurrentLocationTrackingMode.TrackingModeOnWithoutHeading -> mapView.currentLocationTrackingMode = MapView.CurrentLocationTrackingMode.TrackingModeOnWithHeading
-                    MapView.CurrentLocationTrackingMode.TrackingModeOnWithHeading -> mapView.currentLocationTrackingMode = MapView.CurrentLocationTrackingMode.TrackingModeOff
-                }
+                mapView.currentLocationTrackingMode = MapView.CurrentLocationTrackingMode.TrackingModeOnWithoutHeading
             }
-            R.id.button_list -> { listLayout.visibility = View.VISIBLE }
+            R.id.button_list -> {
+                listViewAdapter.updateFavorites()
+                listViewAdapter.updateRating()
+                listViewAdapter.updateReview()
+                listLayout.visibility = View.VISIBLE
+            }
             R.id.button_map -> { listLayout.visibility = View.GONE }
             R.id.button_back -> { searchLayout.visibility = View.GONE }
+            R.id.button_keyword -> {
+                listLayout.visibility = View.GONE
+                searchLayout.visibility = View.VISIBLE
+                searchView.isFocusable = true
+                searchView.requestFocusFromTouch()
+                val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                imm.showSoftInput(searchView, InputMethodManager.SHOW_IMPLICIT)
+            }
         }
     }
 
@@ -325,8 +469,14 @@ class MapActivity : AppCompatActivity(), View.OnClickListener, NavigationView.On
                 supportFragmentManager.beginTransaction().replace(R.id.container_fragment, favoriteFragment).commit()
                 fragmentContainer.visibility = View.VISIBLE
             }
-            R.id.recent_record -> {
-                supportFragmentManager.beginTransaction().replace(R.id.container_fragment, recentRecordFragment).commit()
+            /*
+            R.id.rating_management -> {
+                supportFragmentManager.beginTransaction().replace(R.id.container_fragment, ratingManagementFragment).commit()
+                fragmentContainer.visibility = View.VISIBLE
+            }
+             */
+            R.id.modify_taste -> {
+                supportFragmentManager.beginTransaction().replace(R.id.container_fragment, modifyTasteFragment).commit()
                 fragmentContainer.visibility = View.VISIBLE
             }
         }
@@ -336,6 +486,11 @@ class MapActivity : AppCompatActivity(), View.OnClickListener, NavigationView.On
 
     // MapView 사용 가능 상태(초기)
     override fun onMapViewInitialized(p0: MapView?) {
+        SelectChoice().execute(
+            "http://$IP_ADDRESS/wheretogo/select_user.php",
+            "select * from user where id='$userId'"
+        )
+
         /*
         // 맵 캐시 사용
         MapView.setMapTilePersistentCacheEnabled(true)
@@ -349,17 +504,27 @@ class MapActivity : AppCompatActivity(), View.OnClickListener, NavigationView.On
         // 지도 타일 이미지 캐쉬 데이터 삭제
         mapView.releaseUnusedMapTileImageResources()
          */
-        //mapView.currentLocationTrackingMode = MapView.CurrentLocationTrackingMode.TrackingModeOnWithoutHeading
-        mapView.currentLocationTrackingMode = MapView.CurrentLocationTrackingMode.TrackingModeOff
+        mapView.currentLocationTrackingMode = MapView.CurrentLocationTrackingMode.TrackingModeOnWithoutHeading
+        //mapView.currentLocationTrackingMode = MapView.CurrentLocationTrackingMode.TrackingModeOff
+    }
+
+    // 현 위치 갱신 시
+    override fun onCurrentLocationUpdate(p0: MapView?, p1: MapPoint?, p2: Float) {
+        currentX = p1?.mapPointGeoCoord?.longitude!!
+        currentY = p1.mapPointGeoCoord.latitude
     }
 
     // 지도 이동이 끝난 경우
     override fun onMapViewMoveFinished(p0: MapView?, p1: MapPoint?) {
-        updatePlace()
+        updatePlace(sort)
+        Handler().postDelayed({
+            mapView.currentLocationTrackingMode = MapView.CurrentLocationTrackingMode.TrackingModeOff
+        }, 1000)
     }
 
     // 마커 클릭 시
     override fun onPOIItemSelected(p0: MapView?, p1: MapPOIItem?) {
+        mapView.currentLocationTrackingMode = MapView.CurrentLocationTrackingMode.TrackingModeOff
         bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
 
         updateBottomSheet(p1?.tag!!)
@@ -381,7 +546,6 @@ class MapActivity : AppCompatActivity(), View.OnClickListener, NavigationView.On
     override fun onMapViewDragStarted(p0: MapView?, p1: MapPoint?) { }  // 지도 드래그 시작한 경우
     override fun onMapViewDragEnded(p0: MapView?, p1: MapPoint?) { }    // 지도 드래그 끝낸 경우
 
-    override fun onCurrentLocationUpdate(p0: MapView?, p1: MapPoint?, p2: Float) { }    // 현 위치 갱신 시
     override fun onCurrentLocationDeviceHeadingUpdate(p0: MapView?, p1: Float) { }      // 단말의 방향 각도 값
     override fun onCurrentLocationUpdateFailed(p0: MapView?) { }                        // 갱신 실패 시
     override fun onCurrentLocationUpdateCancelled(p0: MapView?) { }                     // 현 위치 기능 취소 시
@@ -406,31 +570,158 @@ class MapActivity : AppCompatActivity(), View.OnClickListener, NavigationView.On
     private fun updateBottomSheet(tag: Int) {
         val item = listViewAdapter.findItem(tag)
 
+        UpdateComments().execute(
+            "http://$IP_ADDRESS/wheretogo/update_comments.php",
+            "select review.id, review.lat, review.lon, review.comment, review.date, user.gender, rating.rating from review, user, rating where review.lat=${item?.y} and review.lon=${item?.x} and review.id=user.id and rating.id=review.id and rating.lat=review.lat and rating.lon=rating.lon"
+        )
+
         if (item != null) {
             placeName.text = item.placeName
             placeCategory.text = categorySubString(item.categoryName)
-            //placeScore.text
-            //placeRatingBar
-            //placeScoreCount
-            //placeReviewCount
+            placeScore.text = item.scoreAvg.toString()
+            placeRatingBar.rating = item.scoreAvg.toFloat()
+            placeScoreCount.text = item.scoreCount.toString()
+            placeReviewCount.text = item.reviewCount.toString()
             placeAddress.text = item.addressName
             placePhone.text = item.phone
+            placeDistance.text = "${item.distance}m"
+            if (!item.favorites) {
+                favoritesButton.setBackgroundResource(R.drawable.ic_baseline_favorite_border_24)
+            } else {
+                favoritesButton.setBackgroundResource(R.drawable.ic_baseline_favorite_24)
+            }
+            favoritesButton.setOnClickListener {
+                if (item.favorites) {
+                    item.favorites = false
+                    favoritesButton.setBackgroundResource(R.drawable.ic_baseline_favorite_border_24)
+                    UpdateContents().execute(
+                        "http://$IP_ADDRESS/wheretogo/update.php",
+                        "delete from favorites where id='$userId' and lat=${item.y} and lon=${item.x}"
+                    )
+                } else {
+                    item.favorites = true
+                    favoritesButton.setBackgroundResource(R.drawable.ic_baseline_favorite_24)
+                    UpdateContents().execute(
+                        "http://$IP_ADDRESS/wheretogo/update.php",
+                        "insert into favorites (id, lat, lon) values ('$userId', ${item.y}, ${item.x})"
+                    )
+                }
+            }
+
+            myScoreRatingBar.rating = 0f
+            myScoreRatingBar.setOnRatingBarChangeListener { ratingBar, rating, fromUser ->
+                UpdateContents().execute(
+                    "http://$IP_ADDRESS/wheretogo/update.php",
+                    "insert into rating (id, lat, lon, rating) values ('$userId', ${item.y}, ${item.x}, ${rating})"
+                )
+            }
+            averageRatingTextView.text = "${item.scoreAvg}점"
+            averageRatingBar.rating = item.scoreAvg.toFloat()
+            reviewCount.text = item.reviewCount.toString()
+            comment.setText("")
+            commentButton.setOnClickListener {
+                UpdateContents().execute(
+                    "http://$IP_ADDRESS/wheretogo/update.php",
+                    "insert into review (id, lat, lon, comment) values ('$userId', ${item.y}, ${item.x}, '${comment.text}')"
+                )
+                comment.setText("")
+                comment.clearFocus()
+                UpdateComments().execute(
+                    "http://$IP_ADDRESS/wheretogo/update_comments.php",
+                    "select review.id, review.lat, review.lon, review.comment, review.date, user.gender, rating.rating from review, user, rating where review.lat=${item?.y} and review.lon=${item?.x} and review.id=user.id and rating.id=review.id and rating.lat=review.lat and rating.lon=rating.lon"
+                )
+            }
         }
     }
 
-    private fun updatePlace() {
+    private fun updateBottomSheetByItem(item: PlaceInfo) {
+        UpdateComments().execute(
+            "http://$IP_ADDRESS/wheretogo/update_comments.php",
+            "select review.id, review.lat, review.lon, review.comment, review.date, user.gender, rating.rating from review, user, rating where review.lat=${item.y} and review.lon=${item.x} and review.id=user.id and rating.id=review.id and rating.lat=review.lat and rating.lon=rating.lon"
+        )
+
+        placeName.text = item.placeName
+        placeCategory.text = categorySubString(item.categoryName)
+        placeScore.text = item.scoreAvg.toString()
+        placeRatingBar.rating = item.scoreAvg.toFloat()
+        placeScoreCount.text = item.scoreCount.toString()
+        placeReviewCount.text = item.reviewCount.toString()
+        placeAddress.text = item.addressName
+        placePhone.text = item.phone
+        placeDistance.text = "${item.distance}m"
+        if (!item.favorites) {
+            favoritesButton.setBackgroundResource(R.drawable.ic_baseline_favorite_border_24)
+        } else {
+            favoritesButton.setBackgroundResource(R.drawable.ic_baseline_favorite_24)
+        }
+        favoritesButton.setOnClickListener {
+            if (item.favorites) {
+                item.favorites = false
+                favoritesButton.setBackgroundResource(R.drawable.ic_baseline_favorite_border_24)
+                UpdateContents().execute(
+                    "http://$IP_ADDRESS/wheretogo/update.php",
+                    "delete from favorites where id='$userId' and lat=${item.y} and lon=${item.x}"
+                )
+            } else {
+                item.favorites = true
+                favoritesButton.setBackgroundResource(R.drawable.ic_baseline_favorite_24)
+                UpdateContents().execute(
+                    "http://$IP_ADDRESS/wheretogo/update.php",
+                    "insert into favorites (id, lat, lon) values ('$userId', ${item.y}, ${item.x})"
+                )
+            }
+            updateBottomSheetByItem(item)
+        }
+
+        myScoreRatingBar.rating = 0f
+        myScoreRatingBar.setOnRatingBarChangeListener { ratingBar, rating, fromUser ->
+            UpdateContents().execute(
+                "http://$IP_ADDRESS/wheretogo/update.php",
+                "insert into rating (id, lat, lon, rating) values ('$userId', ${item.y}, ${item.x}, ${rating})"
+            )
+            updateBottomSheetByItem(item)
+        }
+        averageRatingTextView.text = "${item.scoreAvg}점"
+        averageRatingBar.rating = item.scoreAvg.toFloat()
+        reviewCount.text = item.reviewCount.toString()
+        comment.setText("")
+        commentButton.setOnClickListener {
+            UpdateContents().execute(
+                "http://$IP_ADDRESS/wheretogo/update.php",
+                "insert into review (id, lat, lon, comment) values ('$userId', ${item.y}, ${item.x}, '${comment.text}')"
+            )
+            comment.setText("")
+            comment.clearFocus()
+            UpdateComments().execute(
+                "http://$IP_ADDRESS/wheretogo/update_comments.php",
+                "select review.id, review.lat, review.lon, review.comment, review.date, user.gender, rating.rating from review, user, rating where review.lat=${item?.y} and review.lon=${item?.x} and review.id=user.id and rating.id=review.id and rating.lat=review.lat and rating.lon=rating.lon"
+            )
+            updateBottomSheetByItem(item)
+        }
+    }
+
+    private fun updatePlace(sort: String) {
         val displayCoords = getDisplayCoords()
         val topLatitude = displayCoords[0]
         val topLongitude = displayCoords[1]
         val bottomLatitude = displayCoords[2]
         val bottomLongitude = displayCoords[3]
 
-        mapView.removeAllPOIItems()
+        listViewAdapter.getPOIItemsOutOfDisplay(topLatitude, topLongitude, bottomLatitude, bottomLongitude)
 
         RestAPITask().execute(
             "https://dapi.kakao.com/v2/local/search/keyword.json?",
-            "rect=$topLongitude,$topLatitude,$bottomLongitude,$bottomLatitude&page=1&size=15&sort=accuracy&category_group_code=FD6&query=$keyword"
+            "x=$currentX&y=$currentY&rect=$topLongitude,$topLatitude,$bottomLongitude,$bottomLatitude&page=1&size=15&sort=$sort&category_group_code=FD6&query=$keyword"
         )
+
+        /*
+        for (i in 2..page) {
+            RestAPITask().execute(
+                "https://dapi.kakao.com/v2/local/search/keyword.json?",
+                "x=$currentX&y=$currentY&rect=$topLongitude,$topLatitude,$bottomLongitude,$bottomLatitude&page=$i&size=15&sort=$sort&category_group_code=FD6&query=$keyword"
+            )
+        }
+         */
     }
 
     private fun getDisplayCoords(): DoubleArray {
@@ -479,6 +770,346 @@ class MapActivity : AppCompatActivity(), View.OnClickListener, NavigationView.On
             }
 
             return
+        }
+    }
+
+    class ReviewInfo(var id: String, var gender: String, var lat: Double, var lon: Double, var comment: String, var rating: Double, var date: String)
+
+    inner class ReviewAdapter : RecyclerView.Adapter<ReviewAdapter.ViewHolder>() {
+        private var items = ArrayList<ReviewInfo>()
+
+        inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+            private var image: ImageView = itemView.findViewById(R.id.imageview_review_user_image)
+            private var rating: RatingBar = itemView.findViewById(R.id.ratingbar_review_rating)
+            private var comment: TextView = itemView.findViewById(R.id.textview_review_comment)
+            private var id: TextView = itemView.findViewById(R.id.textview_review_id)
+            private var date: TextView = itemView.findViewById(R.id.textview_review_date)
+
+            fun setItem(item: ReviewInfo) {
+                if (item.gender == "남자") {
+                    image.setBackgroundResource(R.drawable.ic_baseline_account_circle_men_24)
+                } else {
+                    image.setBackgroundResource(R.drawable.ic_baseline_account_circle_women_24)
+                }
+                rating.rating = item.rating.toFloat()
+                comment.text = item.comment
+                id.text = item.id
+                date.text = item.date
+            }
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+            val inflater = LayoutInflater.from(parent.context)
+            val itemView = inflater.inflate(R.layout.reviews, parent, false)
+
+            return ViewHolder(itemView)
+        }
+
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            val item = items[position]
+            holder.setItem(item)
+        }
+
+        override fun getItemCount(): Int = items.size
+        fun addItem(item: ReviewInfo) { items.add(item) }
+        fun clear() { items.clear() }
+    }
+
+    inner class ListViewAdapter : RecyclerView.Adapter<ListViewAdapter.ViewHolder>() {
+        private var items = ArrayList<PlaceInfo>()
+
+        inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+            private var name: TextView = itemView.findViewById(R.id.place_name)
+            private var category: TextView = itemView.findViewById(R.id.place_category)
+            private var score: TextView = itemView.findViewById(R.id.place_score)
+            private var ratingBar: RatingBar = itemView.findViewById(R.id.place_rating_bar)
+            private var scoreCount: TextView = itemView.findViewById(R.id.place_score_count)
+            private var reviewCount: TextView = itemView.findViewById(R.id.place_review_count)
+            private var address: TextView = itemView.findViewById(R.id.place_address)
+            private var phone: TextView = itemView.findViewById(R.id.place_phone)
+            private var distance: TextView = itemView.findViewById(R.id.place_distance)
+            private var favoritesButton: Button = itemView.findViewById(R.id.button_favorites)
+
+            init {
+                itemView.setOnClickListener {
+                    listLayout.visibility = View.GONE
+                    bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
+
+                    val item = items[adapterPosition]
+                    updateBottomSheet(item.id.toInt())
+
+                    mapView.setMapCenterPointAndZoomLevel(item.point, 2, true)
+                    mapView.selectPOIItem(item.item, true)
+                }
+
+                favoritesButton.setOnClickListener {
+                    val item = items[adapterPosition]
+                    if (item.favorites) {
+                        item.favorites = false
+                        favoritesButton.setBackgroundResource(R.drawable.ic_baseline_favorite_border_24)
+                        UpdateContents().execute(
+                            "http://$IP_ADDRESS/wheretogo/update.php",
+                            "delete from favorites where id='$userId' and lat=${item.y} and lon=${item.x}"
+                        )
+                    } else {
+                        item.favorites = true
+                        favoritesButton.setBackgroundResource(R.drawable.ic_baseline_favorite_24)
+                        UpdateContents().execute(
+                            "http://$IP_ADDRESS/wheretogo/update.php",
+                            "insert into favorites (id, lat, lon) values ('$userId', ${item.y}, ${item.x})"
+                        )
+                    }
+                }
+            }
+
+            fun setItem(item: PlaceInfo) {
+                name.text = item.placeName
+                category.text = categorySubString(item.categoryName)
+                score.text = item.scoreAvg.toString()
+                ratingBar.rating = item.scoreAvg.toFloat()
+                scoreCount.text = item.scoreCount.toString()
+                reviewCount.text = item.reviewCount.toString()
+                address.text = item.addressName
+                phone.text = item.phone
+                distance.text = "${item.distance}m"
+                if (!item.favorites) {
+                    favoritesButton.setBackgroundResource(R.drawable.ic_baseline_favorite_border_24)
+                } else {
+                    favoritesButton.setBackgroundResource(R.drawable.ic_baseline_favorite_24)
+                }
+            }
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+            val inflater = LayoutInflater.from(parent.context)
+            val itemView = inflater.inflate(R.layout.list_item, parent, false)
+
+            return ViewHolder(itemView)
+        }
+
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            val item = items[position]
+            holder.setItem(item)
+        }
+
+        override fun getItemCount(): Int = items.size
+
+        fun setItems(items: ArrayList<PlaceInfo>) { this.items = items }
+        fun addItem(item: PlaceInfo) { items.add(item) }
+        fun clearItems() {
+            items.clear()
+            mapView.removeAllPOIItems()
+        }
+        fun findItem(tag: Int): PlaceInfo? {
+            for (item in items) {
+                if (item.id.toInt() == tag) {
+                    return item
+                }
+            }
+            return null
+        }
+        fun getPOIItemsOutOfDisplay(topLatitude: Double, topLongitude: Double, bottomLatitude: Double, bottomLongitude: Double) {
+            var i = 0
+            while (i < items.size) {
+                if (items[i].x !in topLongitude..bottomLongitude || items[i].y !in bottomLatitude..topLatitude) {
+                    items[i].removeMarker()
+                    items.removeAt(i)
+                } else {
+                    i++
+                }
+            }
+        }
+        fun sortByRating() {
+            // TODO(평점 순으로 정렬)
+        }
+
+        fun setScoreAvg(lat: Double, lon: Double, scoreAvg: Double) {
+            for (item in items) {
+                if (lat == item.y && lon == item.x) {
+                    item.scoreAvg = scoreAvg
+                    break
+                }
+            }
+        }
+        fun setScoreCount(lat: Double, lon: Double, scoreCount: Int) {
+            for (item in items) {
+                if (lat == item.y && lon == item.x) {
+                    item.scoreCount = scoreCount
+                    break
+                }
+            }
+        }
+        fun setReviewCount(lat: Double, lon: Double, reviewCount: Int) {
+            for (item in items) {
+                if (lat == item.y && lon == item.x) {
+                    item.reviewCount = reviewCount
+                    break
+                }
+            }
+        }
+        fun setFavorites(lat: Double, lon: Double, bool: Boolean) {
+            for (item in items) {
+                if (lat == item.y && lon == item.x) {
+                    item.favorites = bool
+                    break
+                }
+            }
+        }
+
+        // 장소들에 대한 평균평점, 평점개수, 리뷰 개수, 즐겨찾기
+        fun updateFavorites() {
+            for (item in items) {
+                UpdateFavorites().execute(
+                    "http://$IP_ADDRESS/wheretogo/update_favorites.php",
+                    "select lat, lon from favorites where id='$userId' and lat=${item.y} and lon=${item.x}"
+                )
+            }
+        }
+        fun updateRating() {
+            for (item in items) {
+                UpdateRating().execute(
+                    "http://$IP_ADDRESS/wheretogo/update_rating.php",
+                    "select avg(rating), count(rating), lat, lon from rating where lat=${item.y} and lon=${item.x}"
+                )
+            }
+        }
+        fun updateReview() {
+            for (item in items) {
+                UpdateReview().execute(
+                    "http://$IP_ADDRESS/wheretogo/update_review.php",
+                    "select count(comment), lat, lon from review where lat=${item.y} and lon=${item.x}"
+                )
+            }
+        }
+    }
+
+    inner class SearchViewAdapter : RecyclerView.Adapter<SearchViewAdapter.ViewHolder>() {
+        private val items = ArrayList<SearchHistoryInfo>()
+
+        inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+            private val searchString: TextView = itemView.findViewById(R.id.textview_search_string)
+
+            init {
+                itemView.setOnClickListener {
+                    val item = items[adapterPosition]
+                    keyword = item.word
+                    keywordButton.text = keyword
+                    searchButton.text = keyword
+                    updatePlace(sort)
+                    searchLayout.visibility = View.GONE
+                    bottomSheetBehavior.state = BottomSheetBehavior.STATE_HIDDEN
+                }
+            }
+
+            fun setItem(item: SearchHistoryInfo) {
+                searchString.text = item.word
+            }
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+            val inflater = LayoutInflater.from(parent.context)
+            val itemView = inflater.inflate(R.layout.search_history, parent, false)
+
+            return ViewHolder(itemView)
+        }
+
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            val item = items[position]
+            holder.setItem(item)
+        }
+
+        override fun getItemCount(): Int = items.size
+
+        fun addItem(item: SearchHistoryInfo) {
+            var flag = false
+            for (temp in items) {
+                if (temp.word == item.word) {
+                    flag = true
+                    break
+                }
+            }
+            if (!flag) {
+                items.add(item)
+            }
+        }
+    }
+
+    private fun getKeyword(n1: Int, n2: Int, n3: Int): String {
+        val python = Python.getInstance()
+        val pythonFile = python.getModule("algorithm")
+        return pythonFile.callAttr("getKeyword", intArrayOf(n1, n2, n3)).toString()
+    }
+
+    inner class SelectChoice : AsyncTask<String, Void, String>() {
+        override fun doInBackground(vararg p0: String?): String {
+            val query = p0[1]
+
+            val serverURL = p0[0]
+            val postParameters = "query=$query"
+
+            try {
+                val url = URL(serverURL)
+                val httpURLConnection = url.openConnection() as HttpURLConnection
+                httpURLConnection.apply {
+                    readTimeout = 5000
+                    connectTimeout = 5000
+                    requestMethod = "POST"
+                    connect()
+                }
+
+                val outputStream = httpURLConnection.outputStream
+                outputStream.apply {
+                    write(postParameters.toByteArray())
+                    flush()
+                    close()
+                }
+
+                val responseStatusCode = httpURLConnection.responseCode
+
+                val inputStream = if (responseStatusCode == HttpURLConnection.HTTP_OK) {
+                    httpURLConnection.inputStream
+                } else {
+                    httpURLConnection.errorStream
+                }
+
+                val bufferedReader = BufferedReader(InputStreamReader(inputStream, "UTF-8"))
+                val sb = StringBuilder()
+                var line: String? = null
+
+                line = bufferedReader.readLine()
+                while (line != null) {
+                    sb.append(line)
+                    line = bufferedReader.readLine()
+                }
+                bufferedReader.close()
+
+                return sb.toString()
+            } catch (e: Exception) {
+                return "Error: ${e.message}"
+            }
+        }
+
+        override fun onPostExecute(result: String?) {
+            super.onPostExecute(result)
+
+            if (result == "empty") {
+                Toast.makeText(applicationContext, result, Toast.LENGTH_SHORT).show()
+            } else {
+                try {
+                    val jsonObject = JSONObject(result!!)
+                    val jsonArray = jsonObject.getJSONArray("result")
+
+                    for (i in 0 until jsonArray.length()) {
+                        val item = jsonArray.getJSONObject(i)
+                        val choice = item.getString("choice")
+
+                        val n = choice.split(',')
+                        keyword = getKeyword(n[0].toInt(), n[1].toInt(), n[2].toInt())
+                    }
+                } catch (e: JSONException) {
+                    Toast.makeText(applicationContext, "${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
         }
     }
 
@@ -538,150 +1169,492 @@ class MapActivity : AppCompatActivity(), View.OnClickListener, NavigationView.On
                 val isEnd = metaJson.getBoolean("is_end")   // 현재 페이지가 마지막 페이지인지 여부
                 val msg = region.toString() + keyword + selectedRegion + pageableCount.toString() + totalCount.toString() + isEnd.toString()
 
-                val list = ArrayList<PlaceInfo>()
+                page = pageableCount
 
                 for (i in 0 until documentsJsonArray.length()) {
                     val documents = documentsJsonArray.getJSONObject(i)
-                    list.add(PlaceInfo(documents))
+                    val id = documents.getString("id")
+
+                    if (listViewAdapter.findItem(id.toInt()) == null) {
+                        val item = PlaceInfo(documents)
+                        item.addMarker()
+                        listViewAdapter.addItem(item)
+                    }
                 }
-                listViewAdapter.setItems(list)
-                listViewAdapter.addMarkers()
-            } catch (e: JSONException) { }
+            } catch (e: JSONException) {
+                //Toast.makeText(applicationContext, "${e.message}", Toast.LENGTH_LONG).show()
+            }
+            listViewAdapter.updateFavorites()
+            listViewAdapter.updateRating()
+            listViewAdapter.updateReview()
         }
     }
 
-    inner class PlaceInfo(private val documents: JSONObject) {
-        val id = documents.getString("id")
-        val placeName = documents.getString("place_name")
-        val categoryName = documents.getString("category_name")
-        val categoryGroupCode = documents.getString("category_group_code")
-        val categoryGroupName = documents.getString("category_group_name")
-        val phone = documents.getString("phone")
-        val addressName = documents.getString("address_name")
-        val roadAddressName = documents.getString("road_address_name")
-        val placeUrl = documents.getString("place_url")
-        val distance = documents.getString("distance")
-        val x = documents.getDouble("x")
-        val y = documents.getDouble("y")
+    inner class UpdateContents : AsyncTask<String, Void, String>() {
+        override fun doInBackground(vararg p0: String?): String {
+            val query = p0[1]
 
-        fun addMarker() {
-            val point = MapPoint.mapPointWithGeoCoord(y, x)
-            val item = MapPOIItem()
-            item.itemName = placeName
-            item.tag = id.toInt()
-            item.mapPoint = point
-            item.markerType = MapPOIItem.MarkerType.BluePin
-            item.selectedMarkerType = MapPOIItem.MarkerType.RedPin
-            mapView.addPOIItem(item)
+            val serverURL = p0[0]
+            val postParameters = "query=$query"
+
+            try {
+                val url = URL(serverURL)
+                val httpURLConnection = url.openConnection() as HttpURLConnection
+                httpURLConnection.apply {
+                    readTimeout = 5000
+                    connectTimeout = 5000
+                    requestMethod = "POST"
+                    connect()
+                }
+
+                val outputStream = httpURLConnection.outputStream
+                outputStream.apply {
+                    write(postParameters.toByteArray())
+                    flush()
+                    close()
+                }
+
+                val responseStatusCode = httpURLConnection.responseCode
+
+                val inputStream = if (responseStatusCode == HttpURLConnection.HTTP_OK) {
+                    httpURLConnection.inputStream
+                } else {
+                    httpURLConnection.errorStream
+                }
+
+                val bufferedReader = BufferedReader(InputStreamReader(inputStream, "UTF-8"))
+                val sb = StringBuilder()
+                var line: String? = null
+
+                line = bufferedReader.readLine()
+                while (line != null) {
+                    sb.append(line)
+                    line = bufferedReader.readLine()
+                }
+                bufferedReader.close()
+
+                return sb.toString()
+            } catch (e: Exception) {
+                return "Error: ${e.message}"
+            }
+        }
+
+        override fun onPostExecute(result: String?) {
+            super.onPostExecute(result)
+
+            //Toast.makeText(applicationContext, result, Toast.LENGTH_SHORT).show()
+
+            listViewAdapter.updateFavorites()
+            listViewAdapter.updateRating()
+            listViewAdapter.updateReview()
         }
     }
 
-    inner class ListViewAdapter : RecyclerView.Adapter<ListViewAdapter.ViewHolder>() {
-        private var items = ArrayList<PlaceInfo>()
+    inner class UpdateRating : AsyncTask<String, Void, String>() {
+        override fun doInBackground(vararg p0: String?): String {
+            val query = p0[1]
 
-        inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-            private var name: TextView = itemView.findViewById(R.id.place_name)
-            private var category: TextView = itemView.findViewById(R.id.place_category)
-            private var score: TextView = itemView.findViewById(R.id.place_score)
-            private var ratingBar: RatingBar = itemView.findViewById(R.id.place_rating_bar)
-            private var scoreCount: TextView = itemView.findViewById(R.id.place_score_count)
-            private var reviewCount: TextView = itemView.findViewById(R.id.place_review_count)
-            private var address: TextView = itemView.findViewById(R.id.place_address)
-            private var phone: TextView = itemView.findViewById(R.id.place_phone)
+            val serverURL = p0[0]
+            val postParameters = "query=$query"
 
-            init {
-                itemView.setOnClickListener {
-                    listLayout.visibility = View.GONE
-                    bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
+            try {
+                val url = URL(serverURL)
+                val httpURLConnection = url.openConnection() as HttpURLConnection
+                httpURLConnection.apply {
+                    readTimeout = 5000
+                    connectTimeout = 5000
+                    requestMethod = "POST"
+                    connect()
+                }
 
-                    val item = items[adapterPosition]
-                    updateBottomSheet(item.id.toInt())
+                val outputStream = httpURLConnection.outputStream
+                outputStream.apply {
+                    write(postParameters.toByteArray())
+                    flush()
+                    close()
+                }
 
-                    val point = MapPoint.mapPointWithGeoCoord(item.y, item.x)
-                    mapView.setMapCenterPointAndZoomLevel(point, 2, true)
+                val responseStatusCode = httpURLConnection.responseCode
+
+                val inputStream = if (responseStatusCode == HttpURLConnection.HTTP_OK) {
+                    httpURLConnection.inputStream
+                } else {
+                    httpURLConnection.errorStream
+                }
+
+                val bufferedReader = BufferedReader(InputStreamReader(inputStream, "UTF-8"))
+                val sb = StringBuilder()
+                var line: String? = null
+
+                line = bufferedReader.readLine()
+                while (line != null) {
+                    sb.append(line)
+                    line = bufferedReader.readLine()
+                }
+                bufferedReader.close()
+
+                return sb.toString()
+            } catch (e: Exception) {
+                return "Error: ${e.message}"
+            }
+        }
+
+        override fun onPostExecute(result: String?) {
+            super.onPostExecute(result)
+
+            if (result == "empty") {
+
+            } else {
+                try {
+                    val jsonObject = JSONObject(result!!)
+                    val jsonArray = jsonObject.getJSONArray("result")
+
+                    for (i in 0 until jsonArray.length()) {
+                        val item = jsonArray.getJSONObject(i)
+                        val avg = item.getDouble("avg")
+                        val count = item.getInt("count")
+                        val lat = item.getDouble("lat")
+                        val lon = item.getDouble("lon")
+
+                        listViewAdapter.setScoreAvg(lat, lon, avg)
+                        listViewAdapter.setScoreCount(lat, lon, count)
+                    }
+
+                    listViewAdapter.notifyDataSetChanged()
+                } catch (e: JSONException) {
+                    //Toast.makeText(applicationContext, "${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
-
-            fun setItem(item: PlaceInfo) {
-                name.text = item.placeName
-                category.text = categorySubString(item.categoryName)
-                // TODO(score.text)
-                // TODO(ratingBar)
-                // TODO(scoreCount.text)
-                // TODO(reviewCount.text)
-                address.text = item.addressName
-                phone.text = item.phone
-            }
-        }
-
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            val inflater = LayoutInflater.from(parent.context)
-            val itemView = inflater.inflate(R.layout.list_item, parent, false)
-
-            return ViewHolder(itemView)
-        }
-
-        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            val item = items[position]
-            holder.setItem(item)
-        }
-
-        override fun getItemCount(): Int = items.size
-
-        fun addItem(item: PlaceInfo) { items.add(item) }
-        fun clearItems() { items.clear() }
-        fun setItems(list: ArrayList<PlaceInfo>) { items = list }
-        fun addMarkers() {
-            for (item in items) {
-                item.addMarker()
-            }
-        }
-        fun findItem(tag: Int): PlaceInfo? {
-            for (item in items) {
-                if (item.id.toInt() == tag) {
-                    return item
-                }
-            }
-            return null
         }
     }
 
-    inner class SearchViewAdapter : RecyclerView.Adapter<SearchViewAdapter.ViewHolder>() {
-        private val items = ArrayList<String>()
+    inner class UpdateReview : AsyncTask<String, Void, String>() {
+        override fun doInBackground(vararg p0: String?): String {
+            val query = p0[1]
 
-        inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-            private val searchString: TextView = itemView.findViewById(R.id.textview_search_string)
+            val serverURL = p0[0]
+            val postParameters = "query=$query"
 
-            init {
-                itemView.setOnClickListener {
-                    val item = items[adapterPosition]
-                    keyword = item
-                    updatePlace()
-                    searchLayout.visibility = View.GONE
-                    bottomSheetBehavior.state = BottomSheetBehavior.STATE_HIDDEN
+            try {
+                val url = URL(serverURL)
+                val httpURLConnection = url.openConnection() as HttpURLConnection
+                httpURLConnection.apply {
+                    readTimeout = 5000
+                    connectTimeout = 5000
+                    requestMethod = "POST"
+                    connect()
+                }
+
+                val outputStream = httpURLConnection.outputStream
+                outputStream.apply {
+                    write(postParameters.toByteArray())
+                    flush()
+                    close()
+                }
+
+                val responseStatusCode = httpURLConnection.responseCode
+
+                val inputStream = if (responseStatusCode == HttpURLConnection.HTTP_OK) {
+                    httpURLConnection.inputStream
+                } else {
+                    httpURLConnection.errorStream
+                }
+
+                val bufferedReader = BufferedReader(InputStreamReader(inputStream, "UTF-8"))
+                val sb = StringBuilder()
+                var line: String? = null
+
+                line = bufferedReader.readLine()
+                while (line != null) {
+                    sb.append(line)
+                    line = bufferedReader.readLine()
+                }
+                bufferedReader.close()
+
+                return sb.toString()
+            } catch (e: Exception) {
+                return "Error: ${e.message}"
+            }
+        }
+
+        override fun onPostExecute(result: String?) {
+            super.onPostExecute(result)
+
+            if (result == "empty") {
+
+            } else {
+                try {
+                    val jsonObject = JSONObject(result!!)
+                    val jsonArray = jsonObject.getJSONArray("result")
+
+                    for (i in 0 until jsonArray.length()) {
+                        val item = jsonArray.getJSONObject(i)
+                        val count = item.getInt("count")
+                        val lat = item.getDouble("lat")
+                        val lon = item.getDouble("lon")
+
+                        listViewAdapter.setReviewCount(lat, lon, count)
+                    }
+
+                    listViewAdapter.notifyDataSetChanged()
+                } catch (e: JSONException) {
+                    //Toast.makeText(applicationContext, "${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
+    inner class UpdateFavorites : AsyncTask<String, Void, String>() {
+        override fun doInBackground(vararg p0: String?): String {
+            val query = p0[1]
+
+            val serverURL = p0[0]
+            val postParameters = "query=$query"
+
+            try {
+                val url = URL(serverURL)
+                val httpURLConnection = url.openConnection() as HttpURLConnection
+                httpURLConnection.apply {
+                    readTimeout = 5000
+                    connectTimeout = 5000
+                    requestMethod = "POST"
+                    connect()
+                }
+
+                val outputStream = httpURLConnection.outputStream
+                outputStream.apply {
+                    write(postParameters.toByteArray())
+                    flush()
+                    close()
+                }
+
+                val responseStatusCode = httpURLConnection.responseCode
+
+                val inputStream = if (responseStatusCode == HttpURLConnection.HTTP_OK) {
+                    httpURLConnection.inputStream
+                } else {
+                    httpURLConnection.errorStream
+                }
+
+                val bufferedReader = BufferedReader(InputStreamReader(inputStream, "UTF-8"))
+                val sb = StringBuilder()
+                var line: String? = null
+
+                line = bufferedReader.readLine()
+                while (line != null) {
+                    sb.append(line)
+                    line = bufferedReader.readLine()
+                }
+                bufferedReader.close()
+
+                return sb.toString()
+            } catch (e: Exception) {
+                return "Error: ${e.message}"
+            }
+        }
+
+        override fun onPostExecute(result: String?) {
+            super.onPostExecute(result)
+
+            if (result == "empty") {
+
+            } else {
+                try {
+                    val jsonObject = JSONObject(result!!)
+                    val jsonArray = jsonObject.getJSONArray("result")
+
+                    for (i in 0 until jsonArray.length()) {
+                        val item = jsonArray.getJSONObject(i)
+                        val lat = item.getDouble("lat")
+                        val lon = item.getDouble("lon")
+
+                        listViewAdapter.setFavorites(lat, lon, true)
+                    }
+
+                    listViewAdapter.notifyDataSetChanged()
+                } catch (e: JSONException) {
+                    //Toast.makeText(applicationContext, "${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
+    inner class UpdateComments : AsyncTask<String, Void, String>() {
+        override fun doInBackground(vararg p0: String?): String {
+            val query = p0[1]
+
+            val serverURL = p0[0]
+            val postParameters = "query=$query"
+
+            try {
+                val url = URL(serverURL)
+                val httpURLConnection = url.openConnection() as HttpURLConnection
+                httpURLConnection.apply {
+                    readTimeout = 5000
+                    connectTimeout = 5000
+                    requestMethod = "POST"
+                    connect()
+                }
+
+                val outputStream = httpURLConnection.outputStream
+                outputStream.apply {
+                    write(postParameters.toByteArray())
+                    flush()
+                    close()
+                }
+
+                val responseStatusCode = httpURLConnection.responseCode
+
+                val inputStream = if (responseStatusCode == HttpURLConnection.HTTP_OK) {
+                    httpURLConnection.inputStream
+                } else {
+                    httpURLConnection.errorStream
+                }
+
+                val bufferedReader = BufferedReader(InputStreamReader(inputStream, "UTF-8"))
+                val sb = StringBuilder()
+                var line: String? = null
+
+                line = bufferedReader.readLine()
+                while (line != null) {
+                    sb.append(line)
+                    line = bufferedReader.readLine()
+                }
+                bufferedReader.close()
+
+                return sb.toString()
+            } catch (e: Exception) {
+                return "Error: ${e.message}"
+            }
+        }
+
+        override fun onPostExecute(result: String?) {
+            super.onPostExecute(result)
+
+            reviewViewAdapter.clear()
+
+            if (result == "empty") {
+
+            } else {
+                try {
+                    val jsonObject = JSONObject(result!!)
+                    val jsonArray = jsonObject.getJSONArray("result")
+
+                    for (i in 0 until jsonArray.length()) {
+                        val item = jsonArray.getJSONObject(i)
+                        val id = item.getString("id")
+                        val lat = item.getDouble("lat")
+                        val lon = item.getDouble("lon")
+                        val comment = item.getString("comment")
+                        val date = item.getString("date")
+                        val gender = item.getString("gender")
+                        val rating = item.getDouble("rating")
+
+                        reviewViewAdapter.addItem(ReviewInfo(id, gender, lat, lon, comment, rating, date))
+                    }
+                } catch (e: JSONException) {
+                    //Toast.makeText(applicationContext, "${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
 
-            fun setItem(item: String) {
-                searchString.text = item
+            reviewViewAdapter.notifyDataSetChanged()
+            listViewAdapter.updateFavorites()
+            listViewAdapter.updateRating()
+            listViewAdapter.updateReview()
+        }
+    }
+
+    inner class UpdateSearchHistory : AsyncTask<String, Void, String>() {
+        override fun doInBackground(vararg p0: String?): String {
+            val query = p0[1]
+
+            val serverURL = p0[0]
+            val postParameters = "query=$query"
+
+            try {
+                val url = URL(serverURL)
+                val httpURLConnection = url.openConnection() as HttpURLConnection
+                httpURLConnection.apply {
+                    readTimeout = 5000
+                    connectTimeout = 5000
+                    requestMethod = "POST"
+                    connect()
+                }
+
+                val outputStream = httpURLConnection.outputStream
+                outputStream.apply {
+                    write(postParameters.toByteArray())
+                    flush()
+                    close()
+                }
+
+                val responseStatusCode = httpURLConnection.responseCode
+
+                val inputStream = if (responseStatusCode == HttpURLConnection.HTTP_OK) {
+                    httpURLConnection.inputStream
+                } else {
+                    httpURLConnection.errorStream
+                }
+
+                val bufferedReader = BufferedReader(InputStreamReader(inputStream, "UTF-8"))
+                val sb = StringBuilder()
+                var line: String? = null
+
+                line = bufferedReader.readLine()
+                while (line != null) {
+                    sb.append(line)
+                    line = bufferedReader.readLine()
+                }
+                bufferedReader.close()
+
+                return sb.toString()
+            } catch (e: Exception) {
+                return "Error: ${e.message}"
             }
         }
 
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            val inflater = LayoutInflater.from(parent.context)
-            val itemView = inflater.inflate(R.layout.search_history, parent, false)
+        override fun onPostExecute(result: String?) {
+            super.onPostExecute(result)
 
-            return ViewHolder(itemView)
+            if (result == "empty") {
+
+            } else {
+                try {
+                    val jsonObject = JSONObject(result!!)
+                    val jsonArray = jsonObject.getJSONArray("result")
+
+                    for (i in 0 until jsonArray.length()) {
+                        val item = jsonArray.getJSONObject(i)
+                        val id = item.getString("id")
+                        val date = item.getString("date")
+                        val word = item.getString("word")
+
+                        searchViewAdapter.addItem(SearchHistoryInfo(date, word))
+                    }
+
+                    searchViewAdapter.notifyDataSetChanged()
+                } catch (e: JSONException) {
+                    //Toast.makeText(applicationContext, "${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
         }
+    }
 
-        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            val item = items[position]
-            holder.setItem(item)
-        }
+    class SearchHistoryInfo(var date: String, var word: String)
 
-        override fun getItemCount(): Int = items.size
+    override fun onCallbackFromFavorites(item: PlaceInfo, items: ArrayList<PlaceInfo>) {
+        bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
 
-        fun addItem(item: String) { items.add(item) }
+        listViewAdapter.setItems(items)
+        updateBottomSheetByItem(item)
+
+        mapView.setMapCenterPointAndZoomLevel(item.point, 2, true)
+        mapView.selectPOIItem(item.item, true)
+    }
+
+    override fun onCallbackFromFavoritesMarker(item: PlaceInfo, items: ArrayList<PlaceInfo>) {
+        listViewAdapter.setItems(items)
+        updateBottomSheetByItem(item)
     }
 }
 
